@@ -1,5 +1,5 @@
 <script lang="ts">
-    import loadBookFromURL from "$lib/Loader";
+    import loadBook from "$lib/Loader";
     import Alert from "bookish-press/components/page/Alert.svelte"
     import Loading from "bookish-press/components/page/Loading.svelte"
     import type Edition from "bookish-press/models/book/Edition";
@@ -11,8 +11,8 @@
     let edition: Edition | undefined = undefined;
 
     onMount(() => {
-        // Load the book from the hosting site's URL.
-        loadBookFromURL((new URL(document.baseURI)).pathname)
+        // Load the book from the folder in which the reader is hosted.
+        loadBook((new URL(document.baseURI)).pathname)
             // If we were successful, render the book!
             .then(book => edition = book)
             .catch(err => error = err)

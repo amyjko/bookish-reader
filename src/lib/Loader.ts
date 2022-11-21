@@ -10,12 +10,12 @@ import { Schema } from "bookish-press/models/book/Schema";
 //   2) a "chapters" folder with .md files corresponding to the chapter IDs in the spec,
 // resolves to a Book object with all of the book data.
 // If any errors are encountered, throws an Error.
-export default async function loadBookFromURL(url: string) {
+export default async function loadBook(base: string) {
 
     let specification: EditionSpecification | undefined = undefined
 
     // Fetch the JSON from the given URL
-    return fetch(url + "book.json")
+    return fetch("book.json")
         // If there's a valid response, get the JSON
         .then(response => {
 
@@ -46,7 +46,7 @@ export default async function loadBookFromURL(url: string) {
                 throw Error(
                     "The book specification has validation errors" +
                     (ajv.errors ?
-                        ": " + ajv.errors.map(error => url + error.instancePath + " " + error.message).join("\n") :
+                        ": " + ajv.errors.map(error => base + error.instancePath + " " + error.message).join("\n") :
                         "."
                     )
                 )
@@ -57,7 +57,7 @@ export default async function loadBookFromURL(url: string) {
 
             // Map all non-forthcoming chapters to a list of fetch promises
             return Promise.all(specification.chapters.filter((chapter: ChapterSpecification) => !chapter.forthcoming).map((chapter: ChapterSpecification) => 
-                fetch(url + "chapters/" + chapter.id + ".md")
+                fetch(base + "chapters/" + chapter.id + ".md")
                     .then((response) => {
 
                         // If we got a reasonable response, process the chapter.
