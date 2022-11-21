@@ -57,7 +57,7 @@ export default async function loadBook(base: string) {
 
             // Map all non-forthcoming chapters to a list of fetch promises
             return Promise.all(specification.chapters.filter((chapter: ChapterSpecification) => !chapter.forthcoming).map((chapter: ChapterSpecification) => 
-                fetch(base + "chapters/" + chapter.id + ".md")
+                fetch(base + "/chapters/" + chapter.id + ".md")
                     .then((response) => {
 
                         // If we got a reasonable response, process the chapter.
