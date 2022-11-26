@@ -9,9 +9,11 @@
     let loading = true;
     let error: string | null = null;
     let edition: Edition | undefined = undefined;
-    let base = new URL(document.baseURI).pathname;
+    let base: string | undefined = undefined;
 
     onMount(() => {
+        base = new URL(document.baseURI).pathname;
+
         // Load the book from the folder in which the reader is hosted.
         loadBook(base)
             // If we were successful, render the book!
@@ -27,7 +29,7 @@
 {:else if error}
     <Alert>Unable to load the book. Here's why:</Alert>
     <code>{error}</code>
-{:else if edition}
+{:else if base && edition}
     <EditionView edition={edition} base={base} editable={false}>
         <slot></slot>
     </EditionView>
