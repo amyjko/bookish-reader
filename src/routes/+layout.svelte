@@ -12,7 +12,8 @@
     let base: string | undefined = undefined;
 
     onMount(() => {
-        base = new URL(document.baseURI).pathname;
+
+        base = document.querySelector('base')?.href ?? "/";
 
         // Load the book from the folder in which the reader is hosted.
         loadBook(base)
@@ -30,7 +31,7 @@
     <Alert>Unable to load the book. Here's why:</Alert>
     <code>{error}</code>
 {:else if base && edition}
-    <EditionView edition={edition} base={base} editable={false}>
+    <EditionView {edition} {base} editable={false}>
         <slot></slot>
     </EditionView>
 {/if}

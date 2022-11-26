@@ -32,7 +32,7 @@ export default async function loadBook(base: string) {
             throw Error(`There not a valid book.json file on this site.`)
         })
         // Validate the specification and then load its chapters...
-        .then((book) => {
+        .then(book => {
 
             // Validate the book schema before we get started.
             const ajv = new Ajv({
