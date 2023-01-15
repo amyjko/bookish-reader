@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Print from "bookish-press/components/page/Print.svelte";
+    import { Print } from "bookish-press";
 </script>
 
 <Print/>

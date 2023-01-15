@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Media from "bookish-press/components/page/Media.svelte";
+    import { Media } from "bookish-press";
 </script>
 
 <Media/>

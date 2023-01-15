@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Search from "bookish-press/components/page/Search.svelte";
+    import { Search } from "bookish-press";
 </script>
 
 <Search/>

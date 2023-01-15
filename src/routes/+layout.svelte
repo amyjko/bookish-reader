@@ -1,37 +1,16 @@
 <script lang="ts">
-    import loadBook from "$lib/Loader";
-    import Alert from "bookish-press/components/page/Alert.svelte"
-    import Loading from "bookish-press/components/page/Loading.svelte"
-    import type Edition from "bookish-press/models/book/Edition";
-    import EditionView from "bookish-press/components/page/Edition.svelte"
-    import { onMount } from "svelte";
+    import { Edition } from 'bookish-press';
+    import { default as EditionModel } from 'bookish-press/models/book/Edition';
+    import book from '$lib/assets/book/book.json';
+    import { writable } from 'svelte/store';
+    import { setContext } from 'svelte';
+    import { EDITION } from 'bookish-press';
 
-    let loading = true;
-    let error: string | null = null;
-    let edition: Edition | undefined = undefined;
-    let base: string | undefined = undefined;
+    const edition = EditionModel.fromJSON(undefined, book);
 
-    onMount(() => {
-
-        base = document.querySelector('base')?.href ?? "/";
-
-        // Load the book from the folder in which the reader is hosted.
-        loadBook(base)
-            // If we were successful, render the book!
-            .then(book => edition = book)
-            .catch(err => error = err)
-            .finally(() => loading = false)
-    });
-
+    setContext(EDITION, writable<EditionModel>(edition));
 </script>
 
-{#if loading}
-    <Loading/>
-{:else if error}
-    <Alert>Unable to load the book. Here's why:</Alert>
-    <code>{error}</code>
-{:else if base && edition}
-    <EditionView {edition} {base} editable={false}>
-        <slot></slot>
-    </EditionView>
-{/if}
+<Edition {edition} editable={false}>
+    <slot />
+</Edition>

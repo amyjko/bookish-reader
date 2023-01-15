@@ -1,5 +1,5 @@
 <script lang="ts">
-    import TableOfContents from "bookish-press/components/page/TableOfContents.svelte";
+    import { TableOfContents } from 'bookish-press';
 </script>
 
-<TableOfContents/>
+<TableOfContents />

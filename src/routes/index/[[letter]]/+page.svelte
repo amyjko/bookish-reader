@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Index from "bookish-press/components/page/Index.svelte";
+    import { Index } from "bookish-press";
 </script>
 
 <Index/>
