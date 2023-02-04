@@ -7,7 +7,19 @@
     "authors": [],
     "images": {},
     "description": "",
-    "chapters": [],
+    "chapters": [
+        {
+            "image": null,
+            "ref": null,
+            "uids": [],
+            "numbered": true,
+            "id": "chapter1",
+            "title": "Placeholder title",
+            "forthcoming": false,
+            "authors": [],
+            "text": "Placeholder chapter."
+        }
+    ],
     "license": "",
     "acknowledgements": "",
     "tags": [],
