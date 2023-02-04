@@ -4,7 +4,9 @@
     import { getEdition } from 'bookish-press/components/page/Contexts';
 
     const edition = getEdition();
-    const chapterID = $page.route.id;
+    const path = $page.route.id;
+    // Strip the / from the front of the path.
+    const chapterID = path ? path.substring(1) : null;
     const chapter =
         $edition !== undefined && chapterID !== null
             ? $edition.getChapter(chapterID)
