@@ -5,7 +5,7 @@
     "scripts": {
         "prepare": "svelte-kit sync",
         "dev": "vite dev",
-        "build": "vite build && exit 0",
+        "build": "(vite build > .log) && echo \"$(cat .log)\" && exit 0",
         "preview": "vite build && vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
     },
