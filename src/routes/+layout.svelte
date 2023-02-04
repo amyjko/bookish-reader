@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Edition } from 'bookish-press';
     import { default as EditionModel } from 'bookish-press/models/book/Edition';
-    import book from '$lib/assets/book/book.json';
+    import book from '$lib/assets/book.json';
     import { writable } from 'svelte/store';
     import { setContext } from 'svelte';
     import { EDITION } from 'bookish-press';
