@@ -1,29 +1,30 @@
 {
-  "name": "bookish-reader",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite build && vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-  },
-  "devDependencies": {
-    "@sveltejs/adapter-static": "^1.0.6",
-    "@sveltejs/kit": "1.3.10",
-    "svelte": "^3.55.1",
-    "svelte-check": "^3.0.3",
-    "svelte-preprocess": "^5.0.1",
-    "tslib": "^2.5.0",
-    "typescript": "^4.9.5",
-    "vite": "^4.1.1",
-    "prettier": "^2.8.3",
-    "prettier-plugin-svelte": "^2.9.0"
-  },
-  "dependencies": {
-    "ajv": "^8.12.0",
-    "ajv-formats": "^2.1.1",
-    "bookish-press": "latest"
-  },
-  "type": "module"
+    "name": "bookish-reader",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "prepare": "svelte-kit sync",
+        "dev": "vite dev",
+        "build": "vite build",
+        "preview": "vite build && vite preview",
+        "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+    },
+    "devDependencies": {
+        "@sveltejs/adapter-static": "^1.0.6",
+        "@sveltejs/kit": "1.3.10",
+        "svelte": "^3.55.1",
+        "svelte-check": "^3.0.3",
+        "svelte-preprocess": "^5.0.1",
+        "tslib": "^2.5.0",
+        "typescript": "^4.9.5",
+        "vite": "^4.1.1",
+        "prettier": "^2.8.3",
+        "prettier-plugin-svelte": "^2.9.0"
+    },
+    "dependencies": {
+        "ajv": "^8.12.0",
+        "ajv-formats": "^2.1.1",
+        "bookish-press": "latest"
+    },
+    "type": "module"
 }
