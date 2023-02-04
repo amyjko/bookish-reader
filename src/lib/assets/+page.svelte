@@ -9,4 +9,8 @@
 
 {#if chapter}
     <Chapter {chapter} />
+{:else if $edition !== undefined}
+    Unable to find chapter {$page.params.chapterid}.
+{:else}
+    Chapter is not inside an edition.
 {/if}
