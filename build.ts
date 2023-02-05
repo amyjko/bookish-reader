@@ -58,7 +58,7 @@ for (const file of files) {
     if (file.endsWith('.bd')) {
         const chapterID = file.split('.')[0];
         console.log(`Found chapter ${file}`);
-        const chapterText = readFileSync(`${folderPath}/${file}`, 'utf8');
+        const chapterText = readFileSync(`${chaptersPath}/${file}`, 'utf8');
         let matchingChapter: ChapterSpecification | undefined = undefined;
         for (const chapter of bookJSON.chapters) {
             if (chapter.id === chapterID) {
