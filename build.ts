@@ -87,6 +87,11 @@ writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
 console.log('Building the book...');
 
 execSync('npm run build', { stdio: 'inherit' });
+
+console.log('Cleaning up...');
+
 execSync('git reset', { stdio: 'inherit' });
 execSync('git checkout', { stdio: 'inherit' });
 execSync('git clean -fd', { stdio: 'inherit' });
+
+console.log('You can find your bound book in the "build" folder.');
