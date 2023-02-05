@@ -17,6 +17,6 @@
     setContext(EDITION, writable<EditionModel>(edition));
 </script>
 
-<Edition {edition}>
+<Edition {edition} base={edition.base ? `${edition.base}/` : ''}>
     <slot />
 </Edition>
