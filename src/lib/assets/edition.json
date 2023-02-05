@@ -1,32 +1,32 @@
 {
-    "bookRef": null,
-    "title": "Placeholder",
-    "summary": "",
-    "number": "1",
-    "published": null,
-    "authors": [],
-    "images": {},
-    "description": "",
-    "chapters": [
-        {
-            "image": null,
-            "ref": null,
-            "uids": [],
-            "numbered": true,
-            "id": "chapter1",
-            "title": "Placeholder title",
-            "forthcoming": false,
-            "authors": [],
-            "text": "Placeholder chapter."
-        }
-    ],
-    "license": "",
-    "acknowledgements": "",
-    "tags": [],
-    "sources": {},
-    "references": {},
-    "symbols": {},
-    "glossary": {},
-    "theme": null,
-    "uids": []
+   "bookRef": null,
+   "title": "Placeholder",
+   "summary": "",
+   "number": "1",
+   "published": null,
+   "authors": [],
+   "images": {},
+   "description": "",
+   "chapters": [
+      {
+         "image": null,
+         "ref": null,
+         "uids": [],
+         "numbered": true,
+         "id": "example",
+         "title": "Placeholder title",
+         "forthcoming": false,
+         "authors": [],
+         "text": "This is my chapter.\n"
+      }
+   ],
+   "license": "",
+   "acknowledgements": "",
+   "tags": [],
+   "sources": {},
+   "references": {},
+   "symbols": {},
+   "glossary": {},
+   "theme": null,
+   "uids": []
 }

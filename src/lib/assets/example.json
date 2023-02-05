@@ -1,0 +1,31 @@
+{
+    "bookRef": null,
+    "title": "Placeholder",
+    "summary": "",
+    "number": "1",
+    "published": null,
+    "authors": [],
+    "images": {},
+    "description": "",
+    "chapters": [
+        {
+            "image": null,
+            "ref": null,
+            "uids": [],
+            "numbered": true,
+            "id": "example",
+            "title": "Placeholder title",
+            "forthcoming": false,
+            "authors": []
+        }
+    ],
+    "license": "",
+    "acknowledgements": "",
+    "tags": [],
+    "sources": {},
+    "references": {},
+    "symbols": {},
+    "glossary": {},
+    "theme": null,
+    "uids": []
+}
