@@ -8,7 +8,7 @@ import {
 import path from 'path';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { Schema } from 'bookish-press/models/book/Schema';
+import Schema from 'bookish-press/models/book/Schema';
 import type { ChapterSpecification } from 'bookish-press/models/book/Chapter';
 import { execSync } from 'child_process';
 
