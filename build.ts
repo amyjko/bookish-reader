@@ -44,8 +44,8 @@ console.log(
     "Found your book! Let's check the chapters/ folder for chapters..."
 );
 
-const folderPath = path.dirname(bookPath);
-const chaptersPath = `${folderPath}/chapters`;
+const bookFolderPath = path.dirname(bookPath);
+const chaptersPath = `${bookFolderPath}/chapters`;
 
 if (!existsSync(chaptersPath)) {
     console.error('There is no chapters/ folder');
@@ -99,7 +99,7 @@ console.log(
     'Grabbing any images in images/ and preparing them for bundling...'
 );
 
-const imagesPath = `images`;
+const imagesPath = `${bookFolderPath}/images`;
 
 if (existsSync(imagesPath)) {
     const destinationImagesPath = `src/static/images`;
