@@ -5,6 +5,7 @@ import {
     mkdirSync,
     copyFileSync,
     existsSync,
+    lstatSync,
 } from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
@@ -12,18 +13,18 @@ import addFormats from 'ajv-formats';
 import Schema from 'bookish-press/models/book/Schema';
 import type { ChapterSpecification } from 'bookish-press/models/book/Chapter';
 import { execSync } from 'child_process';
+import sharp from 'sharp';
 
 const bookPath = process.argv[2];
 
 if (bookPath === undefined) {
-    console.error('I need a path to the book.json file to render.');
-    process.exit(1);
+    cleanAndExit('I need a path to the book.json file to render.');
 }
 
 const bookData = readFileSync(bookPath, 'utf8');
 const bookJSON = JSON.parse(bookData);
 
-console.error("Let's make sure this is a valid book...");
+console.log("Let's make sure this is a valid book...");
 
 const validator = new Ajv({
     strictTuples: false,
@@ -36,8 +37,8 @@ const valid = validator.validate(Schema, bookJSON);
 
 if (!valid) {
     console.error('Uh oh, the book JSON has some problems.');
-    console.log(validator.errors);
-    process.exit(1);
+    console.error(validator.errors);
+    cleanAndExit('Fix them, then try again.');
 }
 
 console.log(
@@ -48,8 +49,7 @@ const bookFolderPath = path.dirname(bookPath);
 const chaptersPath = `${bookFolderPath}/chapters`;
 
 if (!existsSync(chaptersPath)) {
-    console.error('There is no chapters/ folder');
-    process.exit(1);
+    cleanAndExit('There is no chapters/ folder');
 }
 
 const possibleChapterFiles = readdirSync(chaptersPath, 'utf8');
@@ -70,8 +70,7 @@ for (const file of possibleChapterFiles) {
             console.log('Found the matching chapter!');
             matchingChapter.text = chapterText;
         } else {
-            console.error(`Couldn't find the chapter with ID ${chapterID}`);
-            process.exit(1);
+            cleanAndExit(`Couldn't find the chapter with ID ${chapterID}`);
         }
     }
 }
@@ -89,10 +88,9 @@ for (const chapter of bookJSON.chapters) {
 }
 
 if (!foundAll) {
-    console.error(
+    cleanAndExit(
         "Quitting, couldn't find all the chapter text. Check the errors above."
     );
-    process.exit(1);
 }
 
 console.log(
@@ -103,16 +101,29 @@ const imagesPath = `${bookFolderPath}/images`;
 
 if (existsSync(imagesPath)) {
     const destinationImagesPath = `static/images`;
+    const destinationSmallImagesPath = `${destinationImagesPath}/small`;
     // Make an images path in src/static/images
     if (!existsSync(destinationImagesPath)) mkdirSync(destinationImagesPath);
+    // Make a small images path in src/static/images/small
+    if (!existsSync(destinationSmallImagesPath))
+        mkdirSync(destinationSmallImagesPath);
 
     const possibleImageFiles = readdirSync(imagesPath, 'utf8');
     for (const image of possibleImageFiles) {
-        console.log(`Copying ${image}...`);
-        copyFileSync(
-            `${imagesPath}/${image}`,
-            `${destinationImagesPath}/${image}`
-        );
+        const imagePath = `${imagesPath}/${image}`;
+        if (lstatSync(imagePath).isFile()) {
+            console.log(`Copying ${image}...`);
+            copyFileSync(imagePath, `${destinationImagesPath}/${image}`);
+
+            // Resizing image
+            try {
+                await sharp(imagePath)
+                    .resize(320)
+                    .toFile(`${destinationImagesPath}/small/${image}`);
+            } catch (err) {
+                cleanAndExit('Unable to save resized image');
+            }
+        }
     }
 } else {
     console.log('No images path, not adding any images.');
@@ -141,8 +152,18 @@ execSync('npm run build', { stdio: 'inherit' });
 
 console.log('Cleaning up...');
 
-execSync('git reset', { stdio: 'inherit' });
-execSync('git checkout', { stdio: 'inherit' });
-execSync('git clean -fd', { stdio: 'inherit' });
+// clean();
 
 console.log('You can find your bound book in the "build" folder.');
+
+function cleanAndExit(error) {
+    console.log(error);
+    clean();
+    process.exit(1);
+}
+
+function clean() {
+    execSync('git reset', { stdio: 'inherit' });
+    execSync('git checkout', { stdio: 'inherit' });
+    execSync('git clean -fd', { stdio: 'inherit' });
+}
