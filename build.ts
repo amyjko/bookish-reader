@@ -102,13 +102,14 @@ console.log(
 const imagesPath = `${bookFolderPath}/images`;
 
 if (existsSync(imagesPath)) {
-    const destinationImagesPath = `src/static/images`;
+    const destinationImagesPath = `static/images`;
     // Make an images path in src/static/images
-    mkdirSync(`src/static/images`);
+    mkdirSync(destinationImagesPath);
 
     const possibleImageFiles = readdirSync(imagesPath, 'utf8');
-    for (const file of possibleImageFiles) {
-        copyFileSync(file, destinationImagesPath);
+    for (const image of possibleImageFiles) {
+        console.log(`Copying ${image}...`);
+        copyFileSync(image, destinationImagesPath);
     }
 } else {
     console.log('No images path, not adding any images.');
