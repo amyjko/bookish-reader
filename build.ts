@@ -99,7 +99,7 @@ console.log(
     'Grabbing any images in images/ and preparing them for bundling...'
 );
 
-const imagesPath = `${bookPath}/images`;
+const imagesPath = `images`;
 
 if (existsSync(imagesPath)) {
     const destinationImagesPath = `src/static/images`;
