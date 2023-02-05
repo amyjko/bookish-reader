@@ -5,7 +5,7 @@ import {
     mkdirSync,
     copyFileSync,
     existsSync,
-    lstatSync,
+    statSync,
 } from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
@@ -111,7 +111,7 @@ if (existsSync(imagesPath)) {
     const possibleImageFiles = readdirSync(imagesPath, 'utf8');
     for (const image of possibleImageFiles) {
         const imagePath = `${imagesPath}/${image}`;
-        if (lstatSync(imagePath).isFile()) {
+        if (statSync(imagePath).isFile()) {
             console.log(`Copying ${image}...`);
             copyFileSync(imagePath, `${destinationImagesPath}/${image}`);
 
