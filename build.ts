@@ -4,6 +4,7 @@ import {
     writeFileSync,
     mkdirSync,
     copyFileSync,
+    existsSync,
 } from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
@@ -24,7 +25,11 @@ const bookJSON = JSON.parse(bookData);
 
 console.error("Let's make sure this is a valid book...");
 
-const validator = new Ajv({ strictTuples: false, allErrors: true });
+const validator = new Ajv({
+    strictTuples: false,
+    allErrors: true,
+    allowUnionTypes: true,
+});
 addFormats(validator);
 
 const valid = validator.validate(Schema, bookJSON);
@@ -35,11 +40,19 @@ if (!valid) {
     process.exit(1);
 }
 
-console.log("Found your book! Let's see what's inside...");
+console.log(
+    "Found your book! Let's check the chapters/ folder for chapters..."
+);
 
 const folderPath = path.dirname(bookPath);
+const chaptersPath = `${folderPath}/chapters`;
 
-const files = readdirSync(folderPath, 'utf8');
+if (!existsSync(chaptersPath)) {
+    console.error('There is no chapters/ folder');
+    process.exit(1);
+}
+
+const files = readdirSync(chaptersPath, 'utf8');
 
 for (const file of files) {
     if (file.endsWith('.bd')) {
@@ -65,12 +78,17 @@ for (const file of files) {
 
 console.log("Let's make sure we found the text for each chapter...");
 
+let foundAll = true;
 for (const chapter of bookJSON.chapters) {
     if (chapter.text === undefined) {
-        console.error(`Couldn't find text of chapter ${chapter.id}`);
-        process.exit(1);
+        console.error(
+            `Couldn't find text of chapter ${chapter.id}. Are you sure there's a file named ${chapter.id}.bd in the same folder as ${bookPath}?`
+        );
+        foundAll = false;
     }
 }
+
+if (!foundAll) process.exit(1);
 
 console.log(
     "Now that we have all of the chapters, let's build the page for each chapter..."
