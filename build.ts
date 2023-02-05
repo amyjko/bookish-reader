@@ -52,9 +52,9 @@ if (!existsSync(chaptersPath)) {
     process.exit(1);
 }
 
-const files = readdirSync(chaptersPath, 'utf8');
+const possibleChapterFiles = readdirSync(chaptersPath, 'utf8');
 
-for (const file of files) {
+for (const file of possibleChapterFiles) {
     if (file.endsWith('.bd')) {
         const chapterID = file.split('.')[0];
         console.log(`Found chapter ${file}`);
@@ -88,7 +88,31 @@ for (const chapter of bookJSON.chapters) {
     }
 }
 
-if (!foundAll) process.exit(1);
+if (!foundAll) {
+    console.error(
+        "Quitting, couldn't find all the chapter text. Check the errors above."
+    );
+    process.exit(1);
+}
+
+console.log(
+    'Grabbing any images in images/ and preparing them for bundling...'
+);
+
+const imagesPath = `${bookPath}/images`;
+
+if (existsSync(imagesPath)) {
+    const destinationImagesPath = `src/static/images`;
+    // Make an images path in src/static/images
+    mkdirSync(`src/static/images`);
+
+    const possibleImageFiles = readdirSync(imagesPath, 'utf8');
+    for (const file of possibleImageFiles) {
+        copyFileSync(file, destinationImagesPath);
+    }
+} else {
+    console.log('No images path, not adding any images.');
+}
 
 console.log(
     "Now that we have all of the chapters, let's build the page for each chapter..."
