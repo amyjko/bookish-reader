@@ -24,7 +24,7 @@ const bookJSON = JSON.parse(bookData);
 
 console.error("Let's make sure this is a valid book...");
 
-const validator = new Ajv({ strictTuples: false });
+const validator = new Ajv({ strictTuples: false, allErrors: true });
 addFormats(validator);
 
 const valid = validator.validate(Schema, bookJSON);
