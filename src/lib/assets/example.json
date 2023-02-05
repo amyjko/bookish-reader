@@ -1,8 +1,7 @@
 {
-    "bookRef": null,
     "title": "Placeholder",
+    "number": 1,
     "summary": "",
-    "number": "1",
     "published": null,
     "authors": [],
     "images": {},
@@ -26,6 +25,5 @@
     "references": {},
     "symbols": {},
     "glossary": {},
-    "theme": null,
-    "uids": []
+    "theme": null
 }

@@ -6,6 +6,7 @@
         "prepare": "svelte-kit sync",
         "dev": "vite dev",
         "build": "vite build",
+        "bind": "ts-node --esm build.ts",
         "preview": "vite build && vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
     },

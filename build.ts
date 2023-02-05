@@ -7,6 +7,7 @@ import {
 } from 'fs';
 import path from 'path';
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { Schema } from 'bookish-press/models/book/Schema';
 import type { ChapterSpecification } from 'bookish-press/models/book/Chapter';
 import { execSync } from 'child_process';
@@ -21,14 +22,18 @@ if (bookPath === undefined) {
 const bookData = readFileSync(bookPath, 'utf8');
 const bookJSON = JSON.parse(bookData);
 
-// // const validator = new Ajv();
-// // const valid = validator.validate(Schema, bookJSON);
+console.error("Let's make sure this is a valid book...");
 
-// if (!valid) {
-//     console.error('Uh oh, the book JSON has some problems.');
-//     console.log(validator.errors);
-//     process.exit(1);
-// }
+const validator = new Ajv({ strictTuples: false });
+addFormats(validator);
+
+const valid = validator.validate(Schema, bookJSON);
+
+if (!valid) {
+    console.error('Uh oh, the book JSON has some problems.');
+    console.log(validator.errors);
+    process.exit(1);
+}
 
 console.log("Found your book! Let's see what's inside...");
 
