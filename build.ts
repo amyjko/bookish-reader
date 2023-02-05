@@ -42,7 +42,7 @@ const folderPath = path.dirname(bookPath);
 const files = readdirSync(folderPath, 'utf8');
 
 for (const file of files) {
-    if (file.endsWith('.md')) {
+    if (file.endsWith('.bd')) {
         const chapterID = file.split('.')[0];
         console.log(`Found chapter ${file}`);
         const chapterText = readFileSync(`${folderPath}/${file}`, 'utf8');
