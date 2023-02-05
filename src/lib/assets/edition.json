@@ -1,0 +1,32 @@
+{
+   "title": "Placeholder",
+   "number": 1,
+   "summary": "",
+   "published": null,
+   "authors": [],
+   "images": {
+      "cover": "|boomy.jpg|Amy's cute kitty on a bed.|Boomy knows her place.|Amy J. Ko|"
+   },
+   "description": "",
+   "chapters": [
+      {
+         "image": null,
+         "ref": null,
+         "uids": [],
+         "numbered": true,
+         "id": "example",
+         "title": "Placeholder title",
+         "forthcoming": false,
+         "authors": [],
+         "text": "Hello, my chapter."
+      }
+   ],
+   "license": "",
+   "acknowledgements": "",
+   "tags": [],
+   "sources": {},
+   "references": {},
+   "symbols": {},
+   "glossary": {},
+   "theme": null
+}

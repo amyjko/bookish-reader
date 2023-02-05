@@ -156,7 +156,7 @@ console.log('Cleaning up...');
 
 console.log('You can find your bound book in the "build" folder.');
 
-function cleanAndExit(error) {
+function cleanAndExit(error: string) {
     console.log(error);
     clean();
     process.exit(1);
