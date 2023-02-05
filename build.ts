@@ -135,7 +135,7 @@ console.log(
 
 for (const chapter of bookJSON.chapters) {
     const routePath = `src/routes/${chapter.id}`;
-    mkdirSync(routePath);
+    if (!existsSync(routePath)) mkdirSync(routePath);
     // Copy the +page.svelte template from the assets folder.
     copyFileSync(`src/lib/assets/+page.svelte`, `${routePath}/+page.svelte`);
 }
