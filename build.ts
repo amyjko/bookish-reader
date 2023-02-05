@@ -82,7 +82,7 @@ let foundAll = true;
 for (const chapter of bookJSON.chapters) {
     if (chapter.text === undefined) {
         console.error(
-            `Couldn't find text of chapter ${chapter.id}. Are you sure there's a file named ${chapter.id}.bd in the same folder as ${bookPath}?`
+            `Couldn't find text of chapter "${chapter.id}". Are you sure there's a file "chapters/${chapter.id}.bd"?`
         );
         foundAll = false;
     }
@@ -104,12 +104,15 @@ const imagesPath = `${bookFolderPath}/images`;
 if (existsSync(imagesPath)) {
     const destinationImagesPath = `static/images`;
     // Make an images path in src/static/images
-    mkdirSync(destinationImagesPath);
+    if (!existsSync(destinationImagesPath)) mkdirSync(destinationImagesPath);
 
     const possibleImageFiles = readdirSync(imagesPath, 'utf8');
     for (const image of possibleImageFiles) {
         console.log(`Copying ${image}...`);
-        copyFileSync(image, destinationImagesPath);
+        copyFileSync(
+            `${imagesPath}/${image}`,
+            `${destinationImagesPath}/${image}`
+        );
     }
 } else {
     console.log('No images path, not adding any images.');
