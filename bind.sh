@@ -1,3 +1,4 @@
+#!/bin/zsh
 # Clean up prior build
 rm -r build
 # Get into this repo
