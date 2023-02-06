@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Clean up prior build
-rm -r build
+rm -r ../build
 # Get into this repo
 cd bookish-reader
 # Install dependencies
