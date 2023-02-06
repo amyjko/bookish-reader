@@ -156,8 +156,12 @@ if (bookJSON.base !== null) {
     if (base.endsWith('/')) base = base.substring(0, base.length - 1);
     if (base.charAt(0) !== '/') base = `/${base}`;
 
-    const config = readFileSync('svelte.config.js', 'utf8');
-    config.replace("base: ''", `base: '${base}'`);
+    const svelteConfigPath = 'svelte.config.js';
+    let config = readFileSync(svelteConfigPath, 'utf8');
+    writeFileSync(
+        svelteConfigPath,
+        config.replace("base: ''", `base: '${base}'`)
+    );
 }
 
 console.log('Building the book...');
