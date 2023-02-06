@@ -9,7 +9,3 @@ npm install
 npm run bind ../book.json
 # Copy the build into the book's directory
 cp -r build ../build
-# 
-cd ..
-# Remove the reader
-rm -rf bookish-reader
