@@ -146,6 +146,20 @@ console.log(
 
 writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
 
+if (bookJSON.base !== null) {
+    console.log(
+        `Looks like you want your book hosted at '${bookJSON.base}' on your website. I'll configure that.`
+    );
+
+    let base = bookJSON.base;
+
+    if (base.endsWith('/')) base = base.substring(0, base.length - 1);
+    if (base.charAt(0) !== '/') base = `/${base}`;
+
+    const config = readFileSync('svelte.config.js', 'utf8');
+    config.replace("base: ''", `base: '${base}'`);
+}
+
 console.log('Building the book...');
 
 execSync('npm run build', { stdio: 'inherit' });
