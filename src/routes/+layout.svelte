@@ -1,18 +1,13 @@
 <script lang="ts">
     import { Edition } from 'bookish-press';
-    import {
-        default as EditionModel,
-        type EditionSpecification,
-    } from 'bookish-press/models/book/Edition';
-    import spec from '$lib/assets/edition.json';
     import { writable } from 'svelte/store';
     import { setContext } from 'svelte';
     import { EDITION } from 'bookish-press';
+    import type { default as EditionModel } from 'bookish-press/models/book/Edition';
 
-    const edition = EditionModel.fromJSON(
-        undefined,
-        spec as unknown as EditionSpecification
-    );
+    export let data: { edition: EditionModel };
+
+    const { edition } = data;
 
     let base = edition.base ?? '';
     // Strip trailing slash if provided.
