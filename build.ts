@@ -146,7 +146,7 @@ console.log(
 
 writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
 
-if (bookJSON.base !== null) {
+if (bookJSON.base) {
     console.log(
         `Looks like you want your book hosted at '${bookJSON.base}' on your website. I'll configure that.`
     );
