@@ -10,7 +10,7 @@
     let edition = getEdition();
 
     // Resolve the chapter either with the server side data or the edition context if that doesn't exist.
-    let chapter =
+    $: chapter =
         data?.chapter ??
         $edition?.getChapter($page.params.chapterid.replace('.html', ''));
 </script>

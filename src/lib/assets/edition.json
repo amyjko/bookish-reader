@@ -14,11 +14,22 @@
          "ref": null,
          "uids": [],
          "numbered": true,
-         "id": "example",
-         "title": "Placeholder title",
+         "id": "one",
+         "title": "One",
          "forthcoming": false,
          "authors": [],
-         "text": "Hello, my chapter."
+         "text": "Hello, my first chapter."
+      },
+      {
+         "image": null,
+         "ref": null,
+         "uids": [],
+         "numbered": true,
+         "id": "two",
+         "title": "Two",
+         "forthcoming": false,
+         "authors": [],
+         "text": "Hello, my second chapter."
       }
    ],
    "license": "",
