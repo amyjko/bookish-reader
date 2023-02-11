@@ -93,6 +93,8 @@ if (!foundAll) {
     );
 }
 
+console.log('Found the text for every chapter in the book.');
+
 console.log(
     'Grabbing any images in images/ and preparing them for bundling...'
 );
@@ -130,18 +132,7 @@ if (existsSync(imagesPath)) {
 }
 
 console.log(
-    "Now that we have all of the chapters, let's build the page for each chapter..."
-);
-
-for (const chapter of bookJSON.chapters) {
-    const routePath = `src/routes/${chapter.id}`;
-    if (!existsSync(routePath)) mkdirSync(routePath);
-    // Copy the +page.svelte template from the assets folder.
-    copyFileSync(`src/lib/assets/+page.svelte`, `${routePath}/+page.svelte`);
-}
-
-console.log(
-    'Okay, we matched all of the chapters to their text. Writing the updated edition.json file.'
+    "We have a complete record of the book and have generated it's images. Writing the updated edition.json file to assets."
 );
 
 writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
@@ -181,7 +172,7 @@ function cleanAndExit(error: string) {
 }
 
 function clean() {
-    execSync('git reset', { stdio: 'inherit' });
-    execSync('git checkout', { stdio: 'inherit' });
-    execSync('git clean -fd', { stdio: 'inherit' });
+    // execSync('git reset', { stdio: 'inherit' });
+    // execSync('git checkout', { stdio: 'inherit' });
+    // execSync('git clean -fd', { stdio: 'inherit' });
 }
