@@ -11,10 +11,10 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
     },
     "devDependencies": {
-        "@sveltejs/adapter-static": "^1.0.6",
+        "@sveltejs/adapter-static": "^2.0.1",
         "@sveltejs/kit": "^1.7.2",
         "@types/sharp": "^0.31.1",
-        "prettier": "^2.8.3",
+        "prettier": "^2.8.4",
         "prettier-plugin-svelte": "^2.9.0",
         "svelte": "^3.55.1",
         "svelte-check": "^3.0.3",
@@ -22,7 +22,7 @@
         "ts-node": "^10.9.1",
         "tslib": "^2.5.0",
         "typescript": "^4.9.5",
-        "vite": "^4.1.1"
+        "vite": "^4.1.2"
     },
     "dependencies": {
         "ajv": "^8.12.0",
