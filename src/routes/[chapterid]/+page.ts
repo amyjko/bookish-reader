@@ -1,13 +1,13 @@
 export const prerender = true;
 
 import spec from '$lib/assets/edition.json';
-import Edition from 'bookish-press/package/models/book/Edition';
-import type { EditionSpecification } from 'bookish-press/package/models/book/Edition';
-import type { PageLoad } from './$types';
+import { EditionModel } from 'bookish-press';
+import type { EditionSpecification } from 'bookish-press/Edition';
+import type { PageLoad } from './$types.js';
 
 export const load: PageLoad = function ({ params }) {
     // Get the edition from the assets.
-    const edition = Edition.fromJSON(
+    const edition = EditionModel.fromJSON(
         undefined,
         spec as unknown as EditionSpecification
     );

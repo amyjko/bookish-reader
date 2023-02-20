@@ -1,9 +1,7 @@
 <script lang="ts">
-    import Edition from 'bookish-press/package/components/page/Edition.svelte';
+    import { Edition, EDITION, EditionModel } from 'bookish-press';
     import { writable } from 'svelte/store';
     import { setContext } from 'svelte';
-    import { EDITION } from 'bookish-press/package/components/page/Contexts';
-    import type { default as EditionModel } from 'bookish-press/package/models/book/Edition';
 
     export let data: { edition: EditionModel };
 

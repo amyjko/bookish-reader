@@ -8,10 +8,10 @@ import {
     statSync,
 } from 'fs';
 import path from 'path';
-import Ajv from 'ajv';
-import addFormats from 'ajv-formats';
-import Schema from 'bookish-press/package/models/book/Schema';
-import type { ChapterSpecification } from 'bookish-press/package/models/book/Chapter';
+import AjvModule from 'ajv';
+import addFormatsModule from 'ajv-formats';
+import Schema from 'bookish-press/Schema';
+import type { ChapterSpecification } from 'bookish-press/Chapter';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
 
@@ -26,6 +26,8 @@ const bookJSON = JSON.parse(bookData);
 
 console.log("Let's make sure this is a valid book...");
 
+const Ajv = AjvModule.default;
+const addFormats = addFormatsModule.default;
 const validator = new Ajv({
     strictTuples: false,
     allErrors: true,

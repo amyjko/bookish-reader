@@ -1,5 +1,5 @@
 <script lang="ts">
-    import References from 'bookish-press/package/components/page/References.svelte';
+    import { References } from 'bookish-press';
 </script>
 
 <References />

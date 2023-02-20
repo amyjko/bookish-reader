@@ -1,9 +1,8 @@
 <script lang="ts">
-    import type { default as ChapterModel } from 'bookish-press/package/models/book/Chapter';
-    import Chapter from 'bookish-press/package/components/page/Chapter.svelte';
-    import Unknown from 'bookish-press/package/components/page/Unknown.svelte';
+    import { Unknown, Chapter } from 'bookish-press';
+    import type { ChapterModel } from 'bookish-press';
     import { page } from '$app/stores';
-    import { getEdition } from 'bookish-press/package/components/page/Contexts';
+    import { getEdition } from 'bookish-press';
 
     export let data: { chapter: ChapterModel | undefined } | undefined;
 

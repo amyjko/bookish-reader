@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Glossary from 'bookish-press/package/components/page/Glossary.svelte';
+    import { Glossary } from 'bookish-press';
 </script>
 
 <Glossary />
