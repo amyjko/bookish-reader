@@ -2,7 +2,7 @@
 
 ## 0.2.3 2023-06-24
 
--   Updated to Bookish 0.5.4
+-   Updated to Bookish 0.5.5
 -   Updated to Svelte 4, for smaller books.
 
 ## 0.2.2 2023-06-17
