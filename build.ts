@@ -10,8 +10,8 @@ import {
 import path from 'path';
 import AjvModule from 'ajv';
 import addFormatsModule from 'ajv-formats';
-import Schema from 'bookish-press/Schema';
-import type { ChapterSpecification } from 'bookish-press/Chapter';
+import Schema from 'bookish-press';
+import type { ChapterSpecification } from 'bookish-press/dist/models/book/Chapter';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
 
@@ -26,7 +26,7 @@ const bookJSON = JSON.parse(bookData);
 
 console.log("Let's make sure this is a valid book...");
 
-const Ajv = AjvModule.default;
+const Ajv = AjvModule;
 const addFormats = addFormatsModule.default;
 const validator = new Ajv({
     strictTuples: false,
@@ -44,7 +44,7 @@ if (!valid) {
 }
 
 console.log(
-    "Found your book! Let's check the chapters/ folder for chapters..."
+    "Found your book! Let's check the chapters/ folder for chapters...",
 );
 
 const bookFolderPath = path.dirname(bookPath);
@@ -83,7 +83,7 @@ let foundAll = true;
 for (const chapter of bookJSON.chapters) {
     if (chapter.text === undefined) {
         console.error(
-            `Couldn't find text of chapter "${chapter.id}". Are you sure there's a file "chapters/${chapter.id}.bd"?`
+            `Couldn't find text of chapter "${chapter.id}". Are you sure there's a file "chapters/${chapter.id}.bd"?`,
         );
         foundAll = false;
     }
@@ -91,14 +91,14 @@ for (const chapter of bookJSON.chapters) {
 
 if (!foundAll) {
     cleanAndExit(
-        "Quitting, couldn't find all the chapter text. Check the errors above."
+        "Quitting, couldn't find all the chapter text. Check the errors above.",
     );
 }
 
 console.log('Found the text for every chapter in the book.');
 
 console.log(
-    'Grabbing any images in images/ and preparing them for bundling...'
+    'Grabbing any images in images/ and preparing them for bundling...',
 );
 
 const imagesPath = `${bookFolderPath}/images`;
@@ -134,14 +134,14 @@ if (existsSync(imagesPath)) {
 }
 
 console.log(
-    "We have a complete record of the book and have generated it's images. Writing the updated edition.json file to assets."
+    "We have a complete record of the book and have generated it's images. Writing the updated edition.json file to assets.",
 );
 
 writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
 
 if (bookJSON.base) {
     console.log(
-        `Looks like you want your book hosted at '${bookJSON.base}' on your website. I'll configure that.`
+        `Looks like you want your book hosted at '${bookJSON.base}' on your website. I'll configure that.`,
     );
 
     let base = bookJSON.base;
@@ -153,7 +153,7 @@ if (bookJSON.base) {
     let config = readFileSync(svelteConfigPath, 'utf8');
     writeFileSync(
         svelteConfigPath,
-        config.replace("base: ''", `base: '${base}'`)
+        config.replace("base: ''", `base: '${base}'`),
     );
 }
 
