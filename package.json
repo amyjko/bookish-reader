@@ -1,6 +1,6 @@
 {
     "name": "bookish-reader",
-    "version": "0.2.31",
+    "version": "0.2.4",
     "private": true,
     "scripts": {
         "prepare": "svelte-kit sync",
