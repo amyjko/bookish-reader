@@ -10,8 +10,7 @@ import {
 import path from 'path';
 import AjvModule from 'ajv';
 import addFormatsModule from 'ajv-formats';
-import Schema from 'bookish-press';
-import type { ChapterSpecification } from 'bookish-press/dist/models/book/Chapter';
+import Schema from 'bookish-press/Schema';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
 
@@ -61,7 +60,7 @@ for (const file of possibleChapterFiles) {
         const chapterID = file.split('.')[0];
         console.log(`Found chapter ${file}`);
         const chapterText = readFileSync(`${chaptersPath}/${file}`, 'utf8');
-        let matchingChapter: ChapterSpecification | undefined = undefined;
+        let matchingChapter = undefined;
         for (const chapter of bookJSON.chapters) {
             if (chapter.id === chapterID) {
                 matchingChapter = chapter;
@@ -167,7 +166,7 @@ console.log('Cleaning up...');
 
 console.log('You can find your bound book in the "build" folder.');
 
-function cleanAndExit(error: string) {
+function cleanAndExit(error) {
     console.log(error);
     clean();
     process.exit(1);

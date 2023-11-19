@@ -2,7 +2,7 @@ export const prerender = true;
 
 import spec from '$lib/assets/edition.json';
 import { EditionModel } from 'bookish-press';
-import type { EditionSpecification } from 'bookish-press/dist/models/book/Edition';
+import type { EditionSpecification } from 'bookish-press/Edition';
 
 /** @type {import('./$types').LayoutLoad} */
 /** Load the edition, but from disk. This enables full prerendering. */
