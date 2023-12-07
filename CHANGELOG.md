@@ -2,6 +2,10 @@
 
 ## 0.2.4 2023-11-18
 
+-   Updated to Bookish 0.5.73.
+
+## 0.2.4 2023-11-18
+
 -   Updated minor versions.
 -   Updated to Bookish 0.5.7.
 
