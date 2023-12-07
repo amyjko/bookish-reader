@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Edition, EDITION, EditionModel } from 'bookish-press';
+    import { Edition, EDITION, EditionModel, Analytics } from 'bookish-press';
     import { writable } from 'svelte/store';
     import { setContext } from 'svelte';
 
@@ -16,6 +16,9 @@
 
     setContext(EDITION, writable<EditionModel>(edition));
 </script>
+
+<!-- Do book analytics for the book's analytics ID, unless there is no id -->
+{#if edition.gtagid}<Analytics gtagid={edition.gtagid}></Analytics>{/if}
 
 <Edition {edition} {base}>
     <slot />
