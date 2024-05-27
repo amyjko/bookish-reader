@@ -1,14 +1,18 @@
 # Bookish Reader change log
 
-## 0.2.4 2024-04-21
+## 0.2.43 2024-04-21
+
+-   Updated to Bookish 0.6.54.
+
+## 0.2.42 2024-04-21
 
 -   Updated to Bookish 0.6.53.
 
-## 0.2.4 2023-11-18
+## 0.2.41 2023-11-18
 
 -   Updated to Bookish 0.5.73.
 
-## 0.2.4 2023-11-18
+## 0.2.40 2023-11-18
 
 -   Updated minor versions.
 -   Updated to Bookish 0.5.7.
