@@ -28,6 +28,12 @@ if (inputPath === undefined) {
 const inputDir = path.dirname(inputPath);
 const input = JSON.parse(readFileSync(inputPath, 'utf8'));
 
+// An optional shared image pool next to the input. Editions can keep images that
+// they all use here (one copy in the source tree) and only put edition-specific
+// or overriding images in their own images/ folder. For a single book this is
+// just the book's own images/ folder, so behavior is unchanged.
+const sharedImagesPath = path.join(inputDir, 'images');
+
 // The input is either a single book/edition spec (an object with a chapters
 // array) or an editions manifest (an array of edition descriptors). Normalize
 // both into a list of editions to build, each resolved to its spec file.
@@ -181,31 +187,46 @@ async function prepareEdition(specPath) {
     rmSync(destinationImagesPath, { recursive: true, force: true });
     mkdirSync(destinationSmallImagesPath, { recursive: true });
 
-    const imagesPath = `${bookFolderPath}/images`;
-    if (existsSync(imagesPath)) {
-        for (const image of readdirSync(imagesPath, 'utf8')) {
-            const imagePath = `${imagesPath}/${image}`;
-            if (statSync(imagePath).isFile()) {
-                console.log(`Copying ${image}...`);
-                copyFileSync(imagePath, `${destinationImagesPath}/${image}`);
-                try {
-                    await sharp(imagePath)
-                        .resize(320)
-                        .toFile(`${destinationSmallImagesPath}/${image}`);
-                } catch (err) {
-                    cleanAndExit('Unable to save resized image');
-                }
-            }
-        }
-    } else {
-        console.log('No images path, not adding any images.');
+    // Copy the shared pool first, then this edition's own images on top so an
+    // edition can override or add to the shared images. For a single book these
+    // two paths are the same folder, so it's copied once.
+    const editionImagesPath = `${bookFolderPath}/images`;
+    let copiedAny = await copyImages(sharedImagesPath, destinationImagesPath);
+    if (path.resolve(editionImagesPath) !== path.resolve(sharedImagesPath)) {
+        if (await copyImages(editionImagesPath, destinationImagesPath))
+            copiedAny = true;
     }
+    if (!copiedAny) console.log('No images found, not adding any images.');
 
     console.log('Writing the updated edition.json file to assets.');
     writeFileSync(
         'src/lib/assets/edition.json',
         JSON.stringify(bookJSON, null, 3),
     );
+}
+
+/**
+ * Copy every image file in srcDir into destImages, writing a 320px thumbnail into
+ * destImages/small. Returns true if any image was copied, false if srcDir is absent.
+ */
+async function copyImages(srcDir, destImages) {
+    if (!existsSync(srcDir)) return false;
+    const destSmall = `${destImages}/small`;
+    let copied = false;
+    for (const image of readdirSync(srcDir, 'utf8')) {
+        const imagePath = `${srcDir}/${image}`;
+        if (statSync(imagePath).isFile()) {
+            console.log(`Copying ${image}...`);
+            copyFileSync(imagePath, `${destImages}/${image}`);
+            try {
+                await sharp(imagePath).resize(320).toFile(`${destSmall}/${image}`);
+            } catch (err) {
+                cleanAndExit('Unable to save resized image');
+            }
+            copied = true;
+        }
+    }
+    return copied;
 }
 
 /** Normalize a base path: '' for the root, otherwise leading slash, no trailing slash. */

@@ -2,7 +2,7 @@
 
 ## 0.2.45 2026-07-20
 
-- Added support for multiple coexisting editions. Pass an `editions.json` manifest (an array of editions, each with its own `book.json`/`chapters`/`images` and `base` sub-path) instead of a single `book.json`, and the binder builds every edition into one deploy directory with a reader-side edition picker that links across them. Single-book builds are unchanged.
+- Added support for multiple coexisting editions. Pass an `editions.json` manifest (an array of editions, each with its own `book.json`/`chapters` and `base` sub-path) instead of a single `book.json`, and the binder builds every edition into one deploy directory with a reader-side edition picker that links across them. Editions can share an image pool: images in an `images/` folder next to the manifest are used by every edition, and each edition's own `images/` folder adds to or overrides them. Single-book builds are unchanged.
 
 ## 0.2.44 2026-05-02
 
