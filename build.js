@@ -6,6 +6,9 @@ import {
     copyFileSync,
     existsSync,
     statSync,
+    rmSync,
+    cpSync,
+    renameSync,
 } from 'fs';
 import path from 'path';
 import AjvModule from 'ajv';
@@ -14,166 +17,218 @@ import Schema from 'bookish-press/Schema';
 import { execSync } from 'child_process';
 import sharp from 'sharp';
 
-const bookPath = process.argv[2];
+const inputPath = process.argv[2];
 
-if (bookPath === undefined) {
-    cleanAndExit('I need a path to the book.json file to render.');
-}
-
-const bookData = readFileSync(bookPath, 'utf8');
-const bookJSON = JSON.parse(bookData);
-
-console.log("Let's make sure this is a valid book...");
-
-const Ajv = AjvModule;
-const addFormats = addFormatsModule.default;
-const validator = new Ajv({
-    strictTuples: false,
-    allErrors: true,
-    allowUnionTypes: true,
-});
-addFormats(validator);
-
-const valid = validator.validate(Schema, bookJSON);
-
-if (!valid) {
-    console.error('Uh oh, the book JSON has some problems.');
-    console.error(validator.errors);
-    cleanAndExit('Fix them, then try again.');
-}
-
-console.log(
-    "Found your book! Let's check the chapters/ folder for chapters...",
-);
-
-const bookFolderPath = path.dirname(bookPath);
-const chaptersPath = `${bookFolderPath}/chapters`;
-
-if (!existsSync(chaptersPath)) {
-    cleanAndExit('There is no chapters/ folder');
-}
-
-const possibleChapterFiles = readdirSync(chaptersPath, 'utf8');
-
-for (const file of possibleChapterFiles) {
-    if (file.endsWith('.bd')) {
-        const chapterID = file.split('.')[0];
-        console.log(`Found chapter ${file}`);
-        const chapterText = readFileSync(`${chaptersPath}/${file}`, 'utf8');
-        let matchingChapter = undefined;
-        for (const chapter of bookJSON.chapters) {
-            if (chapter.id === chapterID) {
-                matchingChapter = chapter;
-                break;
-            }
-        }
-        if (matchingChapter) {
-            console.log('Found the matching chapter!');
-            matchingChapter.text = chapterText;
-        } else {
-            cleanAndExit(`Couldn't find the chapter with ID ${chapterID}`);
-        }
-    }
-}
-
-console.log("Let's make sure we found the text for each chapter...");
-
-let foundAll = true;
-for (const chapter of bookJSON.chapters) {
-    if (chapter.text === undefined) {
-        console.error(
-            `Couldn't find text of chapter "${chapter.id}". Are you sure there's a file "chapters/${chapter.id}.bd"?`,
-        );
-        foundAll = false;
-    }
-}
-
-if (!foundAll) {
+if (inputPath === undefined) {
     cleanAndExit(
-        "Quitting, couldn't find all the chapter text. Check the errors above.",
+        'I need a path to a book.json file, or an editions.json manifest, to render.',
     );
 }
 
-console.log('Found the text for every chapter in the book.');
+const inputDir = path.dirname(inputPath);
+const input = JSON.parse(readFileSync(inputPath, 'utf8'));
 
-console.log(
-    'Grabbing any images in images/ and preparing them for bundling...',
-);
-
-const imagesPath = `${bookFolderPath}/images`;
-
-if (existsSync(imagesPath)) {
-    const destinationImagesPath = `static/images`;
-    const destinationSmallImagesPath = `${destinationImagesPath}/small`;
-    // Make an images path in src/static/images
-    if (!existsSync(destinationImagesPath)) mkdirSync(destinationImagesPath);
-    // Make a small images path in src/static/images/small
-    if (!existsSync(destinationSmallImagesPath))
-        mkdirSync(destinationSmallImagesPath);
-
-    const possibleImageFiles = readdirSync(imagesPath, 'utf8');
-    for (const image of possibleImageFiles) {
-        const imagePath = `${imagesPath}/${image}`;
-        if (statSync(imagePath).isFile()) {
-            console.log(`Copying ${image}...`);
-            copyFileSync(imagePath, `${destinationImagesPath}/${image}`);
-
-            // Resizing image
-            try {
-                await sharp(imagePath)
-                    .resize(320)
-                    .toFile(`${destinationImagesPath}/small/${image}`);
-            } catch (err) {
-                cleanAndExit('Unable to save resized image');
-            }
-        }
-    }
+// The input is either a single book/edition spec (an object with a chapters
+// array) or an editions manifest (an array of edition descriptors). Normalize
+// both into a list of editions to build, each resolved to its spec file.
+let editions;
+if (Array.isArray(input)) {
+    console.log(`Found an editions manifest with ${input.length} edition(s).`);
+    editions = input.map((entry) => ({
+        base: normalizeBase(entry.base ?? ''),
+        specPath: path.join(inputDir, entry.spec),
+    }));
 } else {
-    console.log('No images path, not adding any images.');
+    // Back-compat: a single book renders exactly as before, at the base declared
+    // in its own spec (usually the root).
+    editions = [{ base: normalizeBase(input.base ?? ''), specPath: inputPath }];
 }
 
-console.log(
-    "We have a complete record of the book and have generated it's images. Writing the updated edition.json file to assets.",
+// Write the editions manifest that the reader's picker consumes. A single-book
+// build writes an empty list so the picker stays hidden; a manifest build writes
+// a client-safe copy of each edition's public metadata.
+const publicManifest = Array.isArray(input)
+    ? input.map((entry) => ({
+          number: entry.number,
+          summary: entry.summary,
+          base: normalizeBase(entry.base ?? ''),
+          published: entry.published ?? null,
+      }))
+    : [];
+writeFileSync(
+    'src/lib/assets/editions.json',
+    JSON.stringify(publicManifest, null, 3),
 );
 
-writeFileSync('src/lib/assets/edition.json', JSON.stringify(bookJSON, null, 3));
+// Build each edition into its own sub-path, accumulating the outputs into
+// build-final so a single deploy directory contains every edition. SvelteKit's
+// static adapter strips the base prefix from output filenames and wipes build/
+// on every run, so we must relocate each edition's output before the next build.
+const finalDir = 'build-final';
+rmSync(finalDir, { recursive: true, force: true });
 
-if (bookJSON.base) {
+for (const edition of editions) {
+    await prepareEdition(edition.specPath);
+
     console.log(
-        `Looks like you want your book hosted at '${bookJSON.base}' on your website. I'll configure that.`,
+        edition.base === ''
+            ? 'Building this edition at the site root...'
+            : `Building this edition at '${edition.base}'...`,
     );
+    execSync('npm run build', {
+        stdio: 'inherit',
+        env: { ...process.env, BASE_PATH: edition.base },
+    });
 
-    let base = bookJSON.base;
-
-    if (base.endsWith('/')) base = base.substring(0, base.length - 1);
-    if (base.charAt(0) !== '/') base = `/${base}`;
-
-    const svelteConfigPath = 'svelte.config.js';
-    let config = readFileSync(svelteConfigPath, 'utf8');
-    writeFileSync(
-        svelteConfigPath,
-        config.replace("base: ''", `base: '${base}'`),
-    );
+    // Relocate build/ into build-final(/base) before the next build wipes it.
+    const target = edition.base === '' ? finalDir : `${finalDir}${edition.base}`;
+    copyDirContents('build', target);
+    console.log(`Collected this edition into ${target}.`);
 }
 
-console.log('Building the book...');
-
-execSync('npm run build', { stdio: 'inherit' });
-
-console.log('Cleaning up...');
-
-// clean();
+// Swap the accumulated output in as build/ so the rest of the pipeline
+// (bind.sh's `cp -r build ../build`, hosting configs) is unchanged.
+rmSync('build', { recursive: true, force: true });
+renameSync(finalDir, 'build');
 
 console.log('You can find your bound book in the "build" folder.');
 
-function cleanAndExit(error) {
-    console.log(error);
-    clean();
-    process.exit(1);
+/**
+ * Validate one edition spec, inject its chapter text and images, and write it to
+ * src/lib/assets/edition.json (the single source the reader loads for this build).
+ */
+async function prepareEdition(specPath) {
+    console.log(`\nPreparing edition from ${specPath}...`);
+    console.log("Let's make sure this is a valid book...");
+
+    const bookJSON = JSON.parse(readFileSync(specPath, 'utf8'));
+
+    const Ajv = AjvModule;
+    const addFormats = addFormatsModule.default;
+    const validator = new Ajv({
+        strictTuples: false,
+        allErrors: true,
+        allowUnionTypes: true,
+    });
+    addFormats(validator);
+
+    if (!validator.validate(Schema, bookJSON)) {
+        console.error('Uh oh, the book JSON has some problems.');
+        console.error(validator.errors);
+        cleanAndExit('Fix them, then try again.');
+    }
+
+    console.log(
+        "Found your book! Let's check the chapters/ folder for chapters...",
+    );
+
+    const bookFolderPath = path.dirname(specPath);
+    const chaptersPath = `${bookFolderPath}/chapters`;
+
+    if (!existsSync(chaptersPath)) {
+        cleanAndExit(`There is no chapters/ folder next to ${specPath}`);
+    }
+
+    for (const file of readdirSync(chaptersPath, 'utf8')) {
+        if (file.endsWith('.bd')) {
+            const chapterID = file.split('.')[0];
+            console.log(`Found chapter ${file}`);
+            const chapterText = readFileSync(`${chaptersPath}/${file}`, 'utf8');
+            let matchingChapter = undefined;
+            for (const chapter of bookJSON.chapters) {
+                if (chapter.id === chapterID) {
+                    matchingChapter = chapter;
+                    break;
+                }
+            }
+            if (matchingChapter) {
+                console.log('Found the matching chapter!');
+                matchingChapter.text = chapterText;
+            } else {
+                cleanAndExit(`Couldn't find the chapter with ID ${chapterID}`);
+            }
+        }
+    }
+
+    console.log("Let's make sure we found the text for each chapter...");
+
+    let foundAll = true;
+    for (const chapter of bookJSON.chapters) {
+        if (chapter.text === undefined) {
+            console.error(
+                `Couldn't find text of chapter "${chapter.id}". Are you sure there's a file "chapters/${chapter.id}.bd"?`,
+            );
+            foundAll = false;
+        }
+    }
+
+    if (!foundAll) {
+        cleanAndExit(
+            "Quitting, couldn't find all the chapter text. Check the errors above.",
+        );
+    }
+
+    console.log('Found the text for every chapter in the book.');
+
+    console.log(
+        'Grabbing any images in images/ and preparing them for bundling...',
+    );
+
+    // Start from a clean static/images so one edition's images don't leak into
+    // the next edition's build (each edition owns its images under its sub-path).
+    const destinationImagesPath = 'static/images';
+    const destinationSmallImagesPath = `${destinationImagesPath}/small`;
+    rmSync(destinationImagesPath, { recursive: true, force: true });
+    mkdirSync(destinationSmallImagesPath, { recursive: true });
+
+    const imagesPath = `${bookFolderPath}/images`;
+    if (existsSync(imagesPath)) {
+        for (const image of readdirSync(imagesPath, 'utf8')) {
+            const imagePath = `${imagesPath}/${image}`;
+            if (statSync(imagePath).isFile()) {
+                console.log(`Copying ${image}...`);
+                copyFileSync(imagePath, `${destinationImagesPath}/${image}`);
+                try {
+                    await sharp(imagePath)
+                        .resize(320)
+                        .toFile(`${destinationSmallImagesPath}/${image}`);
+                } catch (err) {
+                    cleanAndExit('Unable to save resized image');
+                }
+            }
+        }
+    } else {
+        console.log('No images path, not adding any images.');
+    }
+
+    console.log('Writing the updated edition.json file to assets.');
+    writeFileSync(
+        'src/lib/assets/edition.json',
+        JSON.stringify(bookJSON, null, 3),
+    );
 }
 
-function clean() {
-    // execSync('git reset', { stdio: 'inherit' });
-    // execSync('git checkout', { stdio: 'inherit' });
-    // execSync('git clean -fd', { stdio: 'inherit' });
+/** Normalize a base path: '' for the root, otherwise leading slash, no trailing slash. */
+function normalizeBase(base) {
+    let normalized = base ?? '';
+    if (normalized === '' || normalized === '/') return '';
+    if (normalized.endsWith('/'))
+        normalized = normalized.substring(0, normalized.length - 1);
+    if (normalized.charAt(0) !== '/') normalized = `/${normalized}`;
+    return normalized;
+}
+
+/** Copy the children of src into dest (creating dest), like `cp -r src/. dest/`. */
+function copyDirContents(src, dest) {
+    mkdirSync(dest, { recursive: true });
+    for (const entry of readdirSync(src)) {
+        cpSync(path.join(src, entry), path.join(dest, entry), {
+            recursive: true,
+        });
+    }
+}
+
+function cleanAndExit(error) {
+    console.log(error);
+    process.exit(1);
 }

@@ -1,11 +1,11 @@
 #!/bin/zsh
+# Run from inside the reader checkout (the caller, e.g. publish.sh, cd's here first).
 # Clean up prior build
-rm -r ../build
-# Get into this repo
-cd bookish-reader
+rm -rf ../build
 # Install dependencies
 npm install
-# Run the bind script on the book in the parent directory
-npm run bind ../book.json
+# Bind the book in the parent directory. Defaults to ../book.json; pass a path
+# (e.g. ../editions.json) as the first argument to build a multi-edition manifest.
+npm run bind "${1:-../book.json}"
 # Copy the build into the book's directory
 cp -r build ../build

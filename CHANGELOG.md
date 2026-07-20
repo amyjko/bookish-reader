@@ -1,5 +1,9 @@
 # Bookish Reader change log
 
+## 0.2.45 2026-07-20
+
+- Added support for multiple coexisting editions. Pass an `editions.json` manifest (an array of editions, each with its own `book.json`/`chapters`/`images` and `base` sub-path) instead of a single `book.json`, and the binder builds every edition into one deploy directory with a reader-side edition picker that links across them. Single-book builds are unchanged.
+
 ## 0.2.44 2026-05-02
 
 - Updated to Bookish 0.7.4.
