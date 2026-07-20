@@ -12,7 +12,10 @@ const config = {
             fallback: '404.html',
         }),
         paths: {
-            base: '',
+            // Base path for this build. Driven by an env var so the binder can
+            // build multiple editions (each under its own sub-path) sequentially
+            // from a single checkout. Empty string serves the book at the root.
+            base: process.env.BASE_PATH ?? '',
         },
     },
 };

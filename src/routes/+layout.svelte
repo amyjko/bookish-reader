@@ -2,10 +2,19 @@
     import { Edition, EDITION, EditionModel, Analytics } from 'bookish-press';
     import { writable } from 'svelte/store';
     import { setContext } from 'svelte';
+    import EditionPicker from '$lib/EditionPicker.svelte';
 
-    export let data: { edition: EditionModel };
+    export let data: {
+        edition: EditionModel;
+        editions: {
+            number: number;
+            summary: string;
+            base: string;
+            published: number | string | null;
+        }[];
+    };
 
-    const { edition } = data;
+    const { edition, editions } = data;
 
     let base = edition.base ?? '';
     // Strip trailing slash if provided.
@@ -21,5 +30,6 @@
 {#if edition.gtagid}<Analytics gtagid={edition.gtagid}></Analytics>{/if}
 
 <Edition {edition} {base}>
+    <EditionPicker {editions} current={base} />
     <slot />
 </Edition>
