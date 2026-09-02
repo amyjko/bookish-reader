@@ -54,12 +54,21 @@ if (Array.isArray(input)) {
 // build writes an empty list so the picker stays hidden; a manifest build writes
 // a client-safe copy of each edition's public metadata.
 const publicManifest = Array.isArray(input)
-    ? input.map((entry) => ({
-          number: entry.number,
-          summary: entry.summary,
-          base: normalizeBase(entry.base ?? ''),
-          published: entry.published ?? null,
-      }))
+    ? input.map((entry) => {
+          // The manifest entry can carry the public metadata, but each
+          // edition's own spec already declares it, so fall back there —
+          // otherwise a minimal manifest silently yields labels like
+          // "undefinedth edition" in the picker.
+          const spec = JSON.parse(
+              readFileSync(path.join(inputDir, entry.spec), 'utf8'),
+          );
+          return {
+              number: entry.number ?? spec.number,
+              summary: entry.summary ?? spec.summary,
+              base: normalizeBase(entry.base ?? ''),
+              published: entry.published ?? spec.published ?? null,
+          };
+      })
     : [];
 writeFileSync(
     'src/lib/assets/editions.json',
@@ -87,7 +96,8 @@ for (const edition of editions) {
     });
 
     // Relocate build/ into build-final(/base) before the next build wipes it.
-    const target = edition.base === '' ? finalDir : `${finalDir}${edition.base}`;
+    const target =
+        edition.base === '' ? finalDir : `${finalDir}${edition.base}`;
     copyDirContents('build', target);
     console.log(`Collected this edition into ${target}.`);
 }
@@ -219,7 +229,9 @@ async function copyImages(srcDir, destImages) {
             console.log(`Copying ${image}...`);
             copyFileSync(imagePath, `${destImages}/${image}`);
             try {
-                await sharp(imagePath).resize(320).toFile(`${destSmall}/${image}`);
+                await sharp(imagePath)
+                    .resize(320)
+                    .toFile(`${destSmall}/${image}`);
             } catch (err) {
                 cleanAndExit('Unable to save resized image');
             }

@@ -1,17 +1,22 @@
 <script lang="ts">
-    /** Public metadata for every edition, written to assets by build.js. */
-    export let editions: {
-        number: number;
-        summary: string;
-        base: string;
-        published: number | string | null;
-    }[] = [];
-    /** The normalized base path of the edition currently being viewed. */
-    export let current = '';
+    let {
+        /** Public metadata for every edition, written to assets by build.js. */
+        editions = [],
+        /** The normalized base path of the edition currently being viewed. */
+        current = '',
+    }: {
+        editions?: {
+            number: number;
+            summary: string;
+            base: string;
+            published: number | string | null;
+        }[];
+        current?: string;
+    } = $props();
 
     // Each edition is a separate static build under its own base path, so the
     // picker only shows for multi-edition books and links across builds.
-    $: normalizedCurrent = normalize(current);
+    let normalizedCurrent = $derived(normalize(current));
 
     function normalize(base: string) {
         let b = base ?? '';
