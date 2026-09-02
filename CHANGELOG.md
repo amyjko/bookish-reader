@@ -1,5 +1,12 @@
 # Bookish Reader change log
 
+## 0.3.0 2026-09-02
+
+- Migrated to Svelte 5 and Bookish 0.8.2 (`bookish-press@^0.8.2`, which requires Svelte 5), moving the routes to runes and snippets.
+- Upgraded the toolchain: SvelteKit 1 to 2, Vite 4 to 7, `@sveltejs/adapter-static` 2 to 3, `svelte-check` 3 to 4, and `prettier-plugin-svelte` 3 to 4; replaced `svelte-preprocess` with `vitePreprocess` and removed the SvelteKit 1-era tsconfig patch plugin.
+- Updated `sharp` to ^0.34 (0.31 predates current Node versions) and `ajv-formats` to ^3; removed `@types/sharp` (sharp ships its own types) and the unused `ts-node`.
+- Binding the example book now produces a correct `og:image` for social previews and no stray prerendered page, thanks to the cover-URL fix in Bookish 0.8.2.
+
 ## 0.2.44 2026-05-02
 
 - Updated to Bookish 0.7.4.
