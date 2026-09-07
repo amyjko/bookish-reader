@@ -1,5 +1,9 @@
 # Bookish Reader change log
 
+## 0.4.1 2026-09-07
+
+- Updated to Bookish 0.9.3, which fixes chapter header images being absent from exported EPUBs. They were fetched and packaged but never rendered, so the file carried their weight without showing them. Rebind to pick this up.
+
 ## 0.4.0 2026-09-07
 
 - Updated to Bookish 0.9.2 (`bookish-press@^0.9.2`), which adds EPUB export. Every bound book's table of contents now has an "E-book" section that builds an EPUB in the reader's browser and hands back a file to download, with a choice of image size for the device it's headed to. Nothing is uploaded and no server is involved, so this works for statically hosted books exactly as it does on bookish.press. Rebind your book to pick it up.
