@@ -1,5 +1,10 @@
 # Bookish Reader change log
 
+## 0.4.0 2026-09-07
+
+- Updated to Bookish 0.9.2 (`bookish-press@^0.9.2`), which adds EPUB export. Every bound book's table of contents now has an "E-book" section that builds an EPUB in the reader's browser and hands back a file to download, with a choice of image size for the device it's headed to. Nothing is uploaded and no server is involved, so this works for statically hosted books exactly as it does on bookish.press. Rebind your book to pick it up.
+- Bookish 0.9.2 also hardens the exporter against the data real books contain: reference years stored as numbers rather than strings, URLs stored as null, Bookdown escaping inside a URL, and unclosed links — each of which either crashed the export or produced an invalid EPUB. All five of the pre-built books at faculty.washington.edu now export with no epubcheck errors.
+
 ## 0.3.0 2026-09-02
 
 - Migrated to Svelte 5 and Bookish 0.8.2 (`bookish-press@^0.8.2`, which requires Svelte 5), moving the routes to runes and snippets.
