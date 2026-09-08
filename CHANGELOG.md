@@ -1,5 +1,9 @@
 # Bookish Reader change log
 
+## 0.4.3 2026-09-07
+
+- Updated to Bookish 0.9.5. Greyscale is now a checkbox beside the image size menu rather than part of the Compact preset, and it is off by default — a Compact export used to lose its colour permanently, including when read in Apple Books on a tablet. Keeping colour costs under a tenth of the file size. The print and e-book sections are also left off the table of contents when it is printed.
+
 ## 0.4.2 2026-09-07
 
 - Updated to Bookish 0.9.4. A reference whose `url` field holds a bare DOI, a `doi:`-prefixed DOI, an ISBN or a fragment of the citation no longer becomes a broken relative link in the exported EPUB — DOIs resolve through doi.org and anything else renders as text. Header images are also no longer fetched for pages the export leaves out. (0.9.4's other fix, a storage CORS policy, applies to books hosted on bookish.press rather than bound ones.)
