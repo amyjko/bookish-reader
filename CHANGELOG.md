@@ -1,5 +1,9 @@
 # Bookish Reader change log
 
+## 0.4.2 2026-09-07
+
+- Updated to Bookish 0.9.4. A reference whose `url` field holds a bare DOI, a `doi:`-prefixed DOI, an ISBN or a fragment of the citation no longer becomes a broken relative link in the exported EPUB — DOIs resolve through doi.org and anything else renders as text. Header images are also no longer fetched for pages the export leaves out. (0.9.4's other fix, a storage CORS policy, applies to books hosted on bookish.press rather than bound ones.)
+
 ## 0.4.1 2026-09-07
 
 - Updated to Bookish 0.9.3, which fixes chapter header images being absent from exported EPUBs. They were fetched and packaged but never rendered, so the file carried their weight without showing them. Rebind to pick this up.
