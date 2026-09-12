@@ -34,6 +34,38 @@ const input = JSON.parse(readFileSync(inputPath, 'utf8'));
 // just the book's own images/ folder, so behavior is unchanged.
 const sharedImagesPath = path.join(inputDir, 'images');
 
+// Full-size images dominate a published book: authored figures are routinely
+// 2000px wide and several megabytes each, which is far more than a
+// reading-width page can ever show, and a multi-edition book pays for every one
+// of them once per edition. Cap and re-encode them on the way in.
+//
+// Settings live in an optional bookish.json next to the book, because the book
+// schema is closed and describes the book rather than how it is built:
+//
+//     { "images": { "maxWidth": 1600, "palette": true, "quality": 82 } }
+//
+// maxWidth 0 keeps the originals byte for byte. `palette` quantizes PNGs to 256
+// colours, which on this project's books takes about 68% off the total against
+// about 17% for a plain re-encode -- but it is visible on photographs, so it is
+// off unless a book asks for it.
+const settingsPath = path.join(inputDir, 'bookish.json');
+const settings = existsSync(settingsPath)
+    ? JSON.parse(readFileSync(settingsPath, 'utf8'))
+    : {};
+const imageSettings = settings.images ?? {};
+const maxImageWidth = Number(
+    process.env.BOOKISH_IMAGE_MAX_WIDTH ?? imageSettings.maxWidth ?? 1600,
+);
+const paletteImages =
+    (process.env.BOOKISH_IMAGE_PALETTE ?? `${imageSettings.palette ?? false}`) ===
+    'true';
+const imageQuality = Number(
+    process.env.BOOKISH_IMAGE_QUALITY ?? imageSettings.quality ?? 82,
+);
+
+if (Number.isNaN(maxImageWidth) || maxImageWidth < 0)
+    cleanAndExit(`Image maxWidth must be a number of pixels, or 0 to keep originals.`);
+
 // The input is either a single book/edition spec (an object with a chapters
 // array) or an editions manifest (an array of edition descriptors). Normalize
 // both into a list of editions to build, each resolved to its spec file.
@@ -227,7 +259,7 @@ async function copyImages(srcDir, destImages) {
         const imagePath = `${srcDir}/${image}`;
         if (statSync(imagePath).isFile()) {
             console.log(`Copying ${image}...`);
-            copyFileSync(imagePath, `${destImages}/${image}`);
+            await copyImage(imagePath, `${destImages}/${image}`);
             try {
                 await sharp(imagePath)
                     .resize(320)
@@ -239,6 +271,42 @@ async function copyImages(srcDir, destImages) {
         }
     }
     return copied;
+}
+
+/**
+ * Copy one full-size image into the build, capping its dimensions and
+ * re-encoding it. Only formats sharp can re-encode are touched; anything else
+ * (an SVG, an animated GIF) is copied through untouched. The filename and its
+ * extension never change, because chapters reference images by the name their
+ * author wrote.
+ */
+async function copyImage(src, dest) {
+    if (maxImageWidth === 0 || !/\.(png|jpe?g|webp)$/i.test(src)) {
+        copyFileSync(src, dest);
+        return;
+    }
+    try {
+        // `inside` caps the long edge without changing the aspect ratio, and
+        // withoutEnlargement leaves anything already smaller alone.
+        let image = sharp(src).resize({
+            width: maxImageWidth,
+            height: maxImageWidth,
+            fit: 'inside',
+            withoutEnlargement: true,
+        });
+        if (/\.png$/i.test(src))
+            image = image.png({
+                compressionLevel: 9,
+                palette: paletteImages,
+            });
+        else if (/\.jpe?g$/i.test(src))
+            image = image.jpeg({ quality: imageQuality, mozjpeg: true });
+        else image = image.webp({ quality: imageQuality });
+        // toFile picks its encoder from the extension, so the name stays put.
+        await image.toFile(dest);
+    } catch (err) {
+        cleanAndExit(`Unable to prepare image ${path.basename(src)}: ${err.message}`);
+    }
 }
 
 /** Normalize a base path: '' for the root, otherwise leading slash, no trailing slash. */
