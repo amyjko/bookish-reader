@@ -1,0 +1,264 @@
+# Build a bookish book with this reader and publish it.
+#
+# Book repositories call this workflow instead of carrying their own copy of the
+# build; see PUBLISHING.md. Nothing here is specific to any one book, host, or
+# author: the destination, its host key, and the URL to check afterwards are all
+# supplied by the caller.
+name: Publish book
+
+'on':
+    workflow_call:
+        inputs:
+            manifest:
+                description: The book spec to bind, relative to the book's root.
+                type: string
+                default: book.json
+            reader-ref:
+                description: The bookish-reader ref to build with.
+                type: string
+                default: main
+            deploy:
+                description: Where to publish. One of rsync, firebase, or none.
+                type: string
+                required: true
+            destination:
+                description: 'For rsync: the target, as user@host:path/to/book.'
+                type: string
+                default: ''
+            known-hosts:
+                description: >-
+                    For rsync: the destination host's public SSH host key, in
+                    known_hosts format. Host keys are public; get one with
+                    `ssh-keyscan <host>` and check it against
+                    `ssh-keygen -F <host> -l`.
+                type: string
+                default: ''
+            host-key-algorithms:
+                description: >-
+                    For rsync: which host key type to accept. Pinning this avoids
+                    any ambiguity when a host offers several.
+                type: string
+                default: ssh-ed25519
+            extra-files:
+                description: >-
+                    Space-separated files to copy from the book's root into the
+                    built site's root, such as an Apache .htaccess. An upload
+                    that deletes stale files would otherwise remove them.
+                type: string
+                default: ''
+            firebase-project:
+                description: 'For firebase: the project id to deploy to.'
+                type: string
+                default: ''
+            verify-url:
+                description: A URL to fetch after publishing, to prove the book is readable.
+                type: string
+                default: ''
+            dry-run:
+                description: Build and report what would change, but publish nothing.
+                type: boolean
+                default: false
+        secrets:
+            SSH_KEY:
+                description: >-
+                    For rsync: a base64-encoded private SSH key authorized on the
+                    destination host. Base64 keeps it to a single line, so no
+                    stray newline can corrupt it and the whole value is masked.
+                required: false
+            FIREBASE_SERVICE_ACCOUNT:
+                description: 'For firebase: a service account key, as JSON.'
+                required: false
+
+permissions: {}
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        # Binding resizes every image and prerenders every page, once per
+        # edition. Generous, but bounded: a hang should fail, not idle.
+        timeout-minutes: 45
+        permissions:
+            contents: read
+        defaults:
+            run:
+                shell: bash
+        steps:
+            - name: Check out the book
+              uses: actions/checkout@v5
+              with:
+                  # Installing the reader runs the install scripts of a few
+                  # hundred packages in this job. Don't leave a usable GitHub
+                  # token in .git/config where they could read it.
+                  persist-credentials: false
+
+            # The reader binds the book in its *parent* directory, so it has to
+            # be a child of the checkout, not a sibling.
+            - name: Check out the reader
+              env:
+                  READER_REF: ${{ inputs.reader-ref }}
+              run: |
+                  git clone --depth 1 --branch "$READER_REF" \
+                      https://github.com/amyjko/bookish-reader bookish-reader
+                  echo "Bound with bookish-reader \`$(git -C bookish-reader rev-parse --short HEAD)\`." \
+                      >> "$GITHUB_STEP_SUMMARY"
+
+            # Must follow the clone: setup-node builds its cache key by hashing
+            # the lockfile, which doesn't exist until the reader is here. Name
+            # the path rather than letting it glob -- a book repo may have a
+            # lockfile of its own that has nothing to do with the build.
+            - name: Set up Node
+              uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+                  cache: npm
+                  cache-dependency-path: bookish-reader/package-lock.json
+
+            - name: Install the reader
+              working-directory: bookish-reader
+              # npm ci, not bind.sh's npm install: it fails when the lockfile and
+              # package.json disagree instead of quietly resolving something new
+              # and publishing it.
+              run: npm ci
+
+            # This is bind.sh, inlined, so that every command runs under this
+            # step's `bash -e` and a failed bind can't reach the deploy.
+            - name: Bind the book
+              working-directory: bookish-reader
+              env:
+                  MANIFEST: ${{ inputs.manifest }}
+              run: |
+                  rm -rf ../build
+                  npm run bind "../$MANIFEST"
+                  cp -r build ../build
+
+            # A manifest merges every edition into one tree; a single spec builds
+            # at its own base. Either way, report the root to publish and the
+            # list of (directory, spec) pairs the next step has to vouch for.
+            - name: Locate the built editions
+              id: built
+              env:
+                  MANIFEST: ${{ inputs.manifest }}
+              run: |
+                  jq -r '
+                      # Normalize a base the way the binder does: "" for the
+                      # root, otherwise a leading slash and no trailing one.
+                      def base: (. // "") | sub("/$"; "") | sub("^(?!/|$)"; "/");
+                      if type == "array"
+                      then .[] | [ "build" + (.base | base), .spec ]
+                      else [ "build" + (.base | base), env.MANIFEST ]
+                      end | @tsv
+                  ' "$MANIFEST" > editions.tsv
+                  # A manifest's editions live under one merged root; a single
+                  # book's site root is its own base directory.
+                  if [ "$(jq -r 'type' "$MANIFEST")" = "array" ]; then
+                      root=build
+                  else
+                      root=$(cut -f1 editions.tsv | head -1)
+                  fi
+                  echo "root=$root" >> "$GITHUB_OUTPUT"
+                  echo "Publishing from $root:"
+                  cat editions.tsv
+
+            # Publishing replaces whatever is live, so an empty or half-finished
+            # build would take the book down. Refuse unless every edition the
+            # spec promised is actually here.
+            - name: Check the build
+              run: |
+                  while IFS=$'\t' read -r dir spec; do
+                      for file in index.html 404.html; do
+                          test -f "$dir/$file" \
+                              || { echo "::error::No $file in $dir."; exit 1; }
+                      done
+                      test -d "$dir/_app" \
+                          || { echo "::error::No _app bundle in $dir."; exit 1; }
+                      chapters=$(jq '.chapters | length' "$spec")
+                      # A spec that yields no number means the manifest pointed
+                      # somewhere unexpected. Say so, rather than comparing the
+                      # page count against an empty string and calling it a pass.
+                      case "$chapters" in
+                          '' | *[!0-9]*)
+                              echo "::error::Could not read a chapter count from $spec."
+                              exit 1
+                              ;;
+                      esac
+                      pages=$(find "$dir" -maxdepth 1 -name '*.html' | wc -l)
+                      if [ "$pages" -lt "$chapters" ]; then
+                          echo "::error::$dir has only $pages pages for $chapters chapters."
+                          exit 1
+                      fi
+                      echo "- \`${dir}\`: $pages pages, $chapters chapters, $(du -sh "$dir" | cut -f1)." \
+                          >> "$GITHUB_STEP_SUMMARY"
+                  done < editions.tsv
+
+            - name: Add the extra files
+              if: inputs.extra-files != ''
+              env:
+                  ROOT: ${{ steps.built.outputs.root }}
+                  EXTRA: ${{ inputs.extra-files }}
+              run: |
+                  for file in $EXTRA; do
+                      test -f "$file" || { echo "::error::No $file in the book."; exit 1; }
+                      cp "$file" "$ROOT/"
+                      echo "Copied $file into $ROOT."
+                  done
+
+            # Every step above this one runs third-party code from npm. The
+            # credentials appear here and nowhere else.
+            - name: Upload to the host
+              if: inputs.deploy == 'rsync'
+              timeout-minutes: 20
+              env:
+                  SSH_KEY: ${{ secrets.SSH_KEY }}
+                  KNOWN_HOSTS: ${{ inputs.known-hosts }}
+                  ALGORITHMS: ${{ inputs.host-key-algorithms }}
+                  ROOT: ${{ steps.built.outputs.root }}
+                  DESTINATION: ${{ inputs.destination }}
+                  DRY_RUN: ${{ inputs.dry-run }}
+              run: |
+                  test -n "$SSH_KEY" || { echo "::error::deploy: rsync needs the SSH_KEY secret."; exit 1; }
+                  test -n "$DESTINATION" || { echo "::error::deploy: rsync needs a destination."; exit 1; }
+                  test -n "$KNOWN_HOSTS" || { echo "::error::deploy: rsync needs known-hosts."; exit 1; }
+                  umask 077
+                  printf '%s' "$SSH_KEY" | base64 -d > "$RUNNER_TEMP/key"
+                  printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+                  ssh_command="ssh -i $RUNNER_TEMP/key -o IdentitiesOnly=yes"
+                  ssh_command="$ssh_command -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+                  ssh_command="$ssh_command -o StrictHostKeyChecking=yes"
+                  ssh_command="$ssh_command -o HostKeyAlgorithms=$ALGORITHMS"
+                  ssh_command="$ssh_command -o BatchMode=yes -o ConnectTimeout=30"
+                  dry=()
+                  [ "$DRY_RUN" = "true" ] && dry=(--dry-run)
+                  # --delete-after and --delay-updates keep the live book whole
+                  # if the transfer dies partway: nothing is removed or swapped
+                  # into place until every file has arrived. -c compares
+                  # checksums, which matters because -t is deliberately absent:
+                  # every file is freshly built here, so modification times say
+                  # nothing about whether the contents actually changed.
+                  rsync -vzripc --delete-after --delay-updates "${dry[@]}" \
+                      -e "$ssh_command" "$ROOT/" "$DESTINATION"
+
+            - name: Deploy to Firebase Hosting
+              if: inputs.deploy == 'firebase' && inputs.dry-run != true
+              # Pinned by commit, not tag: this is third-party and it handles the
+              # service account.
+              uses: FirebaseExtended/action-hosting-deploy@0cbcac4740c2bfb00d632f0b863b57713124eb5a # v0.9.0
+              with:
+                  firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+                  projectId: ${{ inputs.firebase-project }}
+                  channelId: live
+                  # firebase.json sits at the book's root and points at the tree
+                  # the bind step just wrote.
+                  entryPoint: '.'
+                  # Pin the CLI too, so one of its releases can't break a publish
+                  # on a day nothing changed here.
+                  firebaseToolsVersion: '15.30.0'
+
+            # A green upload doesn't prove the book is readable: a bad rewrite
+            # rule or the wrong permissions still serve an error page.
+            - name: Check the published book
+              if: inputs.verify-url != '' && inputs.dry-run != true
+              env:
+                  URL: ${{ inputs.verify-url }}
+              run: |
+                  curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o /dev/null "$URL"
+                  echo "Published to $URL" >> "$GITHUB_STEP_SUMMARY"

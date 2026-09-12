@@ -1,4 +1,7 @@
 #!/bin/zsh
+# Stop at the first failure. Without this, a bind that dies partway still
+# runs the copy below and exits 0, so the caller publishes a half-built book.
+set -e
 # Run from inside the reader checkout (the caller, e.g. publish.sh, cd's here first).
 # Clean up prior build
 rm -rf ../build

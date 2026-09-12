@@ -1,0 +1,72 @@
+# Rebuild every book that is built with this reader, by hand.
+#
+# A change here -- to the binder, to a component, to a dependency -- doesn't
+# reach a published book until that book is rebuilt, so a reader release leaves
+# every book quietly out of date. This is the button that catches them up.
+#
+# It deliberately does not run on push: one commit here would otherwise redeploy
+# every live site at once, unwatched. Each book also has its own "Run workflow"
+# button, so this is a convenience rather than the only route.
+#
+# Set the BOOKS repository variable to the repositories to rebuild, whitespace-
+# or comma-separated, as owner/repo:
+#
+#     gh variable set BOOKS --repo <owner>/bookish-reader \
+#         --body 'owner/first-book owner/second-book'
+#
+# and BOOKS_DISPATCH_TOKEN to a fine-grained token with Actions: write on each
+# of them. Both are per-repository settings, so anyone using this reader
+# rebuilds their own books, not someone else's.
+name: Rebuild books
+
+'on':
+    workflow_dispatch:
+        inputs:
+            dry-run:
+                description: Ask each book to build and report, but publish nothing.
+                type: boolean
+                default: false
+            reader-ref:
+                description: The ref of this repository to build the books with.
+                type: string
+                default: main
+
+permissions: {}
+
+jobs:
+    rebuild:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Ask each book to publish
+              env:
+                  GH_TOKEN: ${{ secrets.BOOKS_DISPATCH_TOKEN }}
+                  BOOKS: ${{ vars.BOOKS }}
+                  DRY_RUN: ${{ inputs.dry-run }}
+                  READER_REF: ${{ inputs.reader-ref }}
+              run: |
+                  if [ -z "$GH_TOKEN" ]; then
+                      echo "::error::Set the BOOKS_DISPATCH_TOKEN secret to a token with Actions: write on each book."
+                      exit 1
+                  fi
+                  if [ -z "$BOOKS" ]; then
+                      echo "::error::Set the BOOKS repository variable to the books to rebuild, as owner/repo."
+                      exit 1
+                  fi
+                  failed=0
+                  # Commas are easy to type and easy to leave behind; treat them
+                  # as separators rather than as part of a repository name.
+                  for book in ${BOOKS//,/ }; do
+                      echo "Asking $book to publish..."
+                      if gh workflow run publish.yml --repo "$book" \
+                          -f dry-run="$DRY_RUN" -f reader-ref="$READER_REF"; then
+                          echo "- [$book]($GITHUB_SERVER_URL/$book/actions/workflows/publish.yml)" \
+                              >> "$GITHUB_STEP_SUMMARY"
+                      else
+                          # Keep going: one book with a missing workflow or a
+                          # token that doesn't reach it shouldn't strand the rest.
+                          echo "::error::Could not start a publish for $book."
+                          failed=1
+                      fi
+                  done
+                  exit $failed
