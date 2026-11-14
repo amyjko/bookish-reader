@@ -1,5 +1,9 @@
 # Bookish Reader change log
 
+## 0.5.1 2026-11-14
+
+- Updated to Bookish 0.11.0. Its components now read environment variables from SvelteKit 3's `$app/env/public` instead of the deprecated `$env/*` modules. Bound books are otherwise unchanged.
+
 ## 0.5.0 2026-11-14
 
 - Updated to Bookish 0.10.0 and SvelteKit 3, keeping the reader on the same toolchain as Bookish: Vite 7 to 8, `@sveltejs/vite-plugin-svelte` 6 to 7, `@sveltejs/adapter-static` 3 to 4, and TypeScript 5 to 6. The `svelte.config.js` settings now live in `vite.config.ts`, and `src/env.ts` declares the environment variables the Bookish components read, since SvelteKit 3 only exposes declared ones.
