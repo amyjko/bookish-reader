@@ -2,7 +2,7 @@
     import { Edition, EDITION, EditionModel, Analytics } from 'bookish-press';
     import { writable } from 'svelte/store';
     import { setContext, untrack, type Snippet } from 'svelte';
-    import EditionPicker from '$lib/EditionPicker.svelte';
+    import EditionPicker from '#lib/EditionPicker.svelte';
 
     let {
         data,

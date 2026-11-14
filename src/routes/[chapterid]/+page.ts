@@ -1,6 +1,6 @@
 export const prerender = true;
 
-import spec from '$lib/assets/edition.json';
+import spec from '#lib/assets/edition.json';
 import { EditionModel } from 'bookish-press';
 import type { EditionSpecification } from 'bookish-press/Edition';
 import type { PageLoad } from './$types.js';
