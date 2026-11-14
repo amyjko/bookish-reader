@@ -1,5 +1,11 @@
 # Bookish Reader change log
 
+## 0.5.0 2026-11-14
+
+- Updated to Bookish 0.10.0 and SvelteKit 3, keeping the reader on the same toolchain as Bookish: Vite 7 to 8, `@sveltejs/vite-plugin-svelte` 6 to 7, `@sveltejs/adapter-static` 3 to 4, and TypeScript 5 to 6. The `svelte.config.js` settings now live in `vite.config.ts`, and `src/env.ts` declares the environment variables the Bookish components read, since SvelteKit 3 only exposes declared ones.
+- Binding now needs Node 24 (24.12 or later), which Bookish 0.10.0's Firebase dependency requires. The publish workflow now takes its Node version from the reader's `package.json`, so a reader branch that changes it can be dry-run with `reader-ref` before it reaches `main`.
+- Bound books load about half as much JavaScript: Bookish 0.10.0 no longer sends them the Firebase SDK, which a bound book never used. On the example book the first page load drops from 762 KB to 414 KB (230 KB to 120 KB compressed).
+
 ## 0.4.3 2026-09-07
 
 - Updated to Bookish 0.9.5. Greyscale is now a checkbox beside the image size menu rather than part of the Compact preset, and it is off by default — a Compact export used to lose its colour permanently, including when read in Apple Books on a tablet. Keeping colour costs under a tenth of the file size. The print and e-book sections are also left off the table of contents when it is printed.

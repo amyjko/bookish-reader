@@ -106,10 +106,15 @@ jobs:
             # the lockfile, which doesn't exist until the reader is here. Name
             # the path rather than letting it glob -- a book repo may have a
             # lockfile of its own that has nothing to do with the build.
+            #
+            # The Node version comes from the reader's own package.json
+            # (engines.node), not from this file. Books call this workflow from
+            # main, so a version written here would ignore reader-ref, and a
+            # reader branch that moves to a new Node could never be dry-run.
             - name: Set up Node
               uses: actions/setup-node@v5
               with:
-                  node-version: 22
+                  node-version-file: bookish-reader/package.json
                   cache: npm
                   cache-dependency-path: bookish-reader/package-lock.json
 
