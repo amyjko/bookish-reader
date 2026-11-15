@@ -42,12 +42,19 @@ const sharedImagesPath = path.join(inputDir, 'images');
 // Settings live in an optional bookish.json next to the book, because the book
 // schema is closed and describes the book rather than how it is built:
 //
-//     { "images": { "maxWidth": 1600, "palette": true, "quality": 82 } }
+//     { "images": { "maxWidth": 1600, "format": "webp", "quality": 82 } }
 //
-// maxWidth 0 keeps the originals byte for byte. `palette` quantizes PNGs to 256
-// colours, which on this project's books takes about 68% off the total against
-// about 17% for a plain re-encode -- but it is visible on photographs, so it is
-// off unless a book asks for it.
+// `format` "webp" (the default) converts PNG and JPEG images to WebP, which on
+// this project's books is about a tenth of the size: Critically Conscious
+// Computing's images went from 212 MB to 17 MB per edition. The book's cover
+// becomes a JPEG instead (a PNG if it has transparency), because it is also the
+// social preview image and not every link preview accepts WebP. References in
+// the book are rewritten to the new names. "original" keeps each image's format
+// and name. maxWidth 0 keeps the originals byte for byte, in either case.
+//
+// `palette` quantizes PNGs kept as PNG to 256 colours: about 68% off against
+// about 17% for a plain re-encode, but visible on photographs, so it is off
+// unless a book asks for it.
 const settingsPath = path.join(inputDir, 'bookish.json');
 const settings = existsSync(settingsPath)
     ? JSON.parse(readFileSync(settingsPath, 'utf8'))
@@ -62,6 +69,11 @@ const paletteImages =
 const imageQuality = Number(
     process.env.BOOKISH_IMAGE_QUALITY ?? imageSettings.quality ?? 82,
 );
+const imageFormat =
+    process.env.BOOKISH_IMAGE_FORMAT ?? imageSettings.format ?? 'webp';
+
+if (imageFormat !== 'webp' && imageFormat !== 'original')
+    cleanAndExit(`Image format must be "webp" or "original", not "${imageFormat}".`);
 
 if (Number.isNaN(maxImageWidth) || maxImageWidth < 0)
     cleanAndExit(`Image maxWidth must be a number of pixels, or 0 to keep originals.`);
@@ -233,12 +245,30 @@ async function prepareEdition(specPath) {
     // edition can override or add to the shared images. For a single book these
     // two paths are the same folder, so it's copied once.
     const editionImagesPath = `${bookFolderPath}/images`;
-    let copiedAny = await copyImages(sharedImagesPath, destinationImagesPath);
+    // The cover doubles as the social preview image, so it gets a format every
+    // link preview accepts. It's the first field of the cover's embed markup.
+    const coverName = /^\|([^|]+)\|/.exec(bookJSON.images?.cover ?? '')?.[1];
+    const renamed = new Map();
+    let copiedAny = await copyImages(
+        sharedImagesPath,
+        destinationImagesPath,
+        coverName,
+        renamed,
+    );
     if (path.resolve(editionImagesPath) !== path.resolve(sharedImagesPath)) {
-        if (await copyImages(editionImagesPath, destinationImagesPath))
+        if (
+            await copyImages(
+                editionImagesPath,
+                destinationImagesPath,
+                coverName,
+                renamed,
+            )
+        )
             copiedAny = true;
     }
     if (!copiedAny) console.log('No images found, not adding any images.');
+
+    rewriteImageReferences(bookJSON, renamed);
 
     console.log('Writing the updated edition.json file to assets.');
     writeFileSync(
@@ -249,21 +279,36 @@ async function prepareEdition(specPath) {
 
 /**
  * Copy every image file in srcDir into destImages, writing a 320px thumbnail into
- * destImages/small. Returns true if any image was copied, false if srcDir is absent.
+ * destImages/small under the same name. Records each image whose name changed
+ * (by converting to WebP) in `renamed`, from its original name to its new one.
+ * Returns true if any image was copied, false if srcDir is absent.
  */
-async function copyImages(srcDir, destImages) {
+async function copyImages(srcDir, destImages, coverName, renamed) {
     if (!existsSync(srcDir)) return false;
     const destSmall = `${destImages}/small`;
     let copied = false;
     for (const image of readdirSync(srcDir, 'utf8')) {
         const imagePath = `${srcDir}/${image}`;
         if (statSync(imagePath).isFile()) {
-            console.log(`Copying ${image}...`);
-            await copyImage(imagePath, `${destImages}/${image}`);
+            const output = await outputName(imagePath, image === coverName);
+            // Two sources that would land on one name (a.png and a.jpg) keep
+            // their full names, so neither overwrites the other.
+            const target =
+                output !== image && renamedTo(renamed, output, image)
+                    ? `${image}.webp`
+                    : output;
+            if (target !== image) renamed.set(image, target);
+            console.log(
+                target === image
+                    ? `Copying ${image}...`
+                    : `Copying ${image} as ${target}...`,
+            );
+            await copyImage(imagePath, `${destImages}/${target}`);
             try {
+                // toFile picks its encoder from the extension.
                 await sharp(imagePath)
                     .resize(320)
-                    .toFile(`${destSmall}/${image}`);
+                    .toFile(`${destSmall}/${target}`);
             } catch (err) {
                 cleanAndExit('Unable to save resized image');
             }
@@ -273,12 +318,61 @@ async function copyImages(srcDir, destImages) {
     return copied;
 }
 
+/** Whether some image other than `source` was already renamed to `name`. */
+function renamedTo(renamed, name, source) {
+    for (const [from, to] of renamed) if (to === name && from !== source) return true;
+    return false;
+}
+
+/**
+ * The name to publish an image under. With the WebP format, PNG and JPEG
+ * become WebP, except the cover: a JPEG, or a PNG if it has transparency,
+ * because it is also the social preview image. Anything else keeps its name.
+ */
+async function outputName(src, isCover) {
+    const image = path.basename(src);
+    if (
+        imageFormat !== 'webp' ||
+        maxImageWidth === 0 ||
+        !/\.(png|jpe?g)$/i.test(image)
+    )
+        return image;
+    if (!isCover) return image.replace(/\.(png|jpe?g)$/i, '.webp');
+    if (/\.jpe?g$/i.test(image)) return image;
+    const { isOpaque } = await sharp(src).stats();
+    return isOpaque ? image.replace(/\.png$/i, '.jpg') : image;
+}
+
+/**
+ * Point the book at the renamed images. Local images appear only as the first
+ * field of embed markup, `|name|alt|...|`, in the spec and in chapter text, so
+ * only `|name` followed by a bar is replaced; the same filename in a code
+ * sample or a remote URL is left alone.
+ */
+function rewriteImageReferences(bookJSON, renamed) {
+    if (renamed.size === 0) return;
+    const rewrite = (text) =>
+        text.replace(/\|([^|\n]+)(?=\|)/g, (match, name) =>
+            renamed.has(name) ? `|${renamed.get(name)}` : match,
+        );
+    const walk = (value) => {
+        if (typeof value === 'string') return rewrite(value);
+        if (Array.isArray(value)) return value.map(walk);
+        if (value !== null && typeof value === 'object') {
+            for (const key of Object.keys(value)) value[key] = walk(value[key]);
+            return value;
+        }
+        return value;
+    };
+    walk(bookJSON);
+    console.log(`Pointed the book at ${renamed.size} converted image(s).`);
+}
+
 /**
  * Copy one full-size image into the build, capping its dimensions and
- * re-encoding it. Only formats sharp can re-encode are touched; anything else
- * (an SVG, an animated GIF) is copied through untouched. The filename and its
- * extension never change, because chapters reference images by the name their
- * author wrote.
+ * re-encoding it in the format its destination name asks for. Only formats
+ * sharp can re-encode are touched; anything else (an SVG, an animated GIF) is
+ * copied through untouched.
  */
 async function copyImage(src, dest) {
     if (maxImageWidth === 0 || !/\.(png|jpe?g|webp)$/i.test(src)) {
@@ -294,15 +388,16 @@ async function copyImage(src, dest) {
             fit: 'inside',
             withoutEnlargement: true,
         });
-        if (/\.png$/i.test(src))
+        if (/\.png$/i.test(dest))
             image = image.png({
                 compressionLevel: 9,
                 palette: paletteImages,
             });
-        else if (/\.jpe?g$/i.test(src))
-            image = image.jpeg({ quality: imageQuality, mozjpeg: true });
+        else if (/\.jpe?g$/i.test(dest))
+            image = image
+                .flatten({ background: '#ffffff' })
+                .jpeg({ quality: imageQuality, mozjpeg: true });
         else image = image.webp({ quality: imageQuality });
-        // toFile picks its encoder from the extension, so the name stays put.
         await image.toFile(dest);
     } catch (err) {
         cleanAndExit(`Unable to prepare image ${path.basename(src)}: ${err.message}`);
