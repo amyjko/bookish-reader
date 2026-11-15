@@ -140,15 +140,27 @@ a reusable workflow runs with *your* repository's secrets:
 ## Image size
 
 Full-size figures are most of what a book weighs, and a multi-edition book pays
-for each one per edition. The binder caps them at 1600px and re-encodes them.
-To change that, add a `bookish.json` next to your `book.json`:
+for each one per edition, in hosting bills as well as readers' downloads. The
+binder caps them at 1600px and converts PNG and JPEG images to WebP. On
+Critically Conscious Computing, that took each edition's images from 212 MB to
+20 MB. Your book's files and references don't change: the binder renames
+`figure.png` to `figure.webp` only in the built copy, and points the built book
+at the new name.
+
+The cover is the exception. It becomes a JPEG (or stays a PNG if it has
+transparency), because it is also the image link previews show, and not all of
+them accept WebP. GIFs and SVGs are copied as they are. An exported EPUB
+converts WebP back to JPEG or PNG for older e-readers.
+
+To change any of this, add a `bookish.json` next to your `book.json`:
 
 ```json
-{ "images": { "maxWidth": 1600, "palette": true, "quality": 82 } }
+{ "images": { "maxWidth": 1600, "format": "webp", "quality": 82 } }
 ```
 
-`maxWidth: 0` keeps your originals byte for byte. `palette` quantizes PNGs to 256
-colours, which takes roughly 68% off a typical book against roughly 17% for a
-plain re-encode — a large saving, but a visible one on photographs. Look at your
-figures before leaving it on. `BOOKISH_IMAGE_MAX_WIDTH`, `BOOKISH_IMAGE_PALETTE`
-and `BOOKISH_IMAGE_QUALITY` override these for a single run.
+`format: "original"` keeps each image's format and name. `maxWidth: 0` keeps your
+originals byte for byte. `quality` applies to WebP and JPEG. `palette` quantizes
+images kept as PNG to 256 colours: a large saving, but a visible one on
+photographs, so look at your figures before turning it on.
+`BOOKISH_IMAGE_FORMAT`, `BOOKISH_IMAGE_MAX_WIDTH`, `BOOKISH_IMAGE_PALETTE` and
+`BOOKISH_IMAGE_QUALITY` override these for a single run.

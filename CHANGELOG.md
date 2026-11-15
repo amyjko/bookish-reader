@@ -1,5 +1,10 @@
 # Bookish Reader change log
 
+## 0.6.0 2026-11-14
+
+- Images are now published as WebP, which cuts a book's image weight by about 90%. Critically Conscious Computing's images went from 212 MB to 20 MB per edition. The binder renames `figure.png` to `figure.webp` in the built copy and rewrites the book's references to match. Your source files don't change. The cover becomes a JPEG instead (or stays a PNG if it has transparency), because it is also the social preview image. GIFs and SVGs are copied unchanged. Set `"format": "original"` under `images` in `bookish.json` to keep the old behaviour.
+- Updated to Bookish 0.11.2, whose EPUB export converts WebP images back to JPEG or PNG for e-readers that can't show WebP.
+
 ## 0.5.1 2026-11-14
 
 - Updated to Bookish 0.11.0. Its components now read environment variables from SvelteKit 3's `$app/env/public` instead of the deprecated `$env/*` modules. Bound books are otherwise unchanged.
